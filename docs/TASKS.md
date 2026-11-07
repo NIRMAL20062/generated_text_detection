@@ -1,7 +1,8 @@
 # Team 20: Who Codes What
 
 > Proposed assignment. Swap roles freely, but **edit this file when you do** so it stays the source of truth.
-> Big picture: [ROADMAP.md](ROADMAP.md). Final deadline: **Sat 22 Nov, 11:59 pm IST**.
+> Big picture: [ROADMAP.md](ROADMAP.md). Step-by-step git + Kaggle commands: [CONTRIBUTING.md](../CONTRIBUTING.md).
+> Final deadline: **Sat 22 Nov, 11:59 pm IST**.
 
 | Role | Person | Owns | One-line job |
 |---|---|---|---|
@@ -39,6 +40,14 @@ If everyone follows these formats, nobody waits on anybody else's code.
 | `domain` | str | `wikipedia` · `wikihow` · `reddit` · `arxiv` · `peerread` |
 | `generator` | str | `chatGPT` · `davinci` · `cohere` · `dolly` · `bloomz` (human rows: the generator of their paired file) |
 | `group` | str | hash of the normalised **human** text of the pair. Both texts of a pair share it, and so does every copy of the same human text across generator files |
+
+**Grid:** the full 5 domains × 5 generators exists in M4 English. The extra files `arxiv_flant5`,
+`reddit_flant5` and `peerread_llama` are **excluded**.
+
+**PeerRead exception:** a PeerRead row is one paper with a *list* of reviews (e.g. 3 human, 4 machine), not a
+1:1 pair. Each review becomes its own row (id suffix `_h<k>` / `_m<k>`, e.g. `peerread_chatGPT_0042_m3`), and
+`group` = hash of the **paper** (title / source id), so every review of one paper stays in the same split.
+`max_per_cell` counts papers for PeerRead. Exact handling and counts are in `results/data_audit.md`.
 
 Duplicate human texts across generator files are **kept once** in the dataset (the dropped copies' machine
 twins keep the same `group`). After dedup, a human row's `generator` value is arbitrary. So **LOGO splits and any
