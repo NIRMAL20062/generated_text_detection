@@ -20,6 +20,7 @@ whether detectors still work on **unseen generators**, **unseen domains**, and *
 
 - [docs/ROADMAP.md](docs/ROADMAP.md): what we're building, the evaluation settings, timeline, risks
 - [docs/TASKS.md](docs/TASKS.md): who codes what, and the shared data/split/prediction formats (read §0 first)
+- [CONTRIBUTING.md](CONTRIBUTING.md): how we work day to day (branches, PRs, Kaggle runs, getting results back)
 
 ## Setup
 
