@@ -1,13 +1,14 @@
 # Python 3.11 (matches Kaggle). torch is NOT pinned on purpose: Kaggle provides it.
 # Locally: uv venv --python 3.11 && uv pip install -r requirements.txt  (install torch yourself if needed)
-transformers==4.46.3
-datasets==3.1.0
-scikit-learn==1.5.2
-pandas==2.2.3
-pyarrow==18.1.0
-numpy>=1.26,<3
-scipy>=1.11
-sentencepiece==0.2.0   # T5 tokenizer (DetectGPT perturbations, paraphraser)
-accelerate>=0.34
+# Pins are patched releases (no open Dependabot alerts), each out for at least 2 weeks.
+transformers==5.20.2
+datasets==5.1.0
+scikit-learn==1.9.1
+pandas==3.0.6
+pyarrow==26.0.0
+numpy>=2.0,<3
+scipy>=1.13
+sentencepiece==0.2.2   # T5 tokenizer (DetectGPT perturbations, paraphraser)
+accelerate>=1.10
 tqdm>=4.66
-matplotlib>=3.8
+matplotlib>=3.9
