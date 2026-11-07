@@ -47,7 +47,16 @@ If everyone follows these formats, nobody waits on anybody else's code.
 **PeerRead exception:** a PeerRead row is one paper with a *list* of reviews (e.g. 3 human, 4 machine), not a
 1:1 pair. Each review becomes its own row (id suffix `_h<k>` / `_m<k>`, e.g. `peerread_chatGPT_0042_m3`), and
 `group` = hash of the **paper** (title / source id), so every review of one paper stays in the same split.
-`max_per_cell` counts papers for PeerRead. Exact handling and counts are in `results/data_audit.md`.
+PeerRead is capped at `max_per_cell // 4` = **250 papers per cell** (≈1,000 machine reviews, like the other cells).
+Without the cap, PeerRead's 586 papers would each contain every generator, so all of PeerRead would land in
+every LOGO test set and none in train. Exact handling and counts are in `results/data_audit.md`.
+
+**Text normalisation:** every text has its whitespace collapsed (`" ".join(text.split())`). arXiv and PeerRead
+human texts had hard line breaks, a formatting shortcut a detector could learn. **Anything that creates new text
+(D's paraphrases) must apply the same normalisation.**
+
+**Final size** (from the audit): 38,241 texts = 13,243 human + 24,998 machine, 1,000 machine texts per
+(domain, generator) cell. LOGO splits are ~19k train / ~10k test; the `indist` test has 1,312 humans.
 
 Duplicate human texts across generator files are **kept once** in the dataset (the dropped copies' machine
 twins keep the same `group`). After dedup, a human row's `generator` value is arbitrary. So **LOGO splits and any
@@ -83,7 +92,7 @@ Setting names (use these exact strings everywhere):
 | `paraphrase_orig` | A | val = `indist` val; test = 500 machine + 500 human texts from the `indist` test (balanced over domain × generator), **original** texts. This is the fair "before" number |
 | `paraphrase` | D | same val and same 500 humans; the 500 machine texts replaced by their `_para` versions. This is the "after" number |
 | `paraphrase_human` | D | *(optional control)* the same 500 machine originals + ~200 of the humans replaced by paraphrased versions (label stays 0) |
-| `detectgpt_subset.json` | A | not a setting: a list of ~1,500 ids drawn from **`indist` val + test**, balanced over domain × generator × label (seed 42) |
+| `detectgpt_subset.json` | A | not a setting: 1,500 ids (750 human / 750 machine) = the 1,000 `paraphrase_orig` test ids + 500 balanced ids from `indist` **val** (for thresholds). C adds the `_para` ids once D delivers them |
 
 Train-free methods (zero-shot) and already-trained models are evaluated on `paraphrase*` using the `indist` model.
 
@@ -108,6 +117,8 @@ otherwise `null`). **Nobody writes their own metric code.**
 ### 0.4 Running things: `--dev` flag, Kaggle data, getting results back
 - **`--dev` on every script:** runs on `data/sample_dev.parquet` and finishes in **under 2 minutes on CPU**.
   Test your code with `--dev` before spending GPU quota. PR reviewers run it too.
+  Use the shared loaders: `load_texts(dev=True)` and `load_split(name, dev=True)`, which read the dev splits in
+  `splits/dev/<setting>.json` (built from the sample by the same code). Never hand-filter the full splits.
 - **Data on Kaggle:** `data/` is gitignored, so A uploads `data/processed/*.parquet` as a **private Kaggle
   Dataset `team20-m4-processed`**, shared with the other three. Notebooks attach that dataset, link it to
   `data/processed/`, and `git clone` the repo for the code and `splits/`. The first cell asserts that every id in
@@ -145,7 +156,7 @@ Everyone depends on you first, so **do the bootstrap commit today, ship a dev sa
   - CLI: `python -m src.data --all`, plus `python -m src.data --check-splits`, which asserts that every id in
     `splits/*.json` exists in `load_texts()`. Every Kaggle notebook runs it first (see CONTRIBUTING.md §4).
 - [ ] Upload `data/processed/` as the Kaggle Dataset `team20-m4-processed` and share it with B, C and D (§0.4)
-- [ ] `src/eval.py`: reads preds.csv + `load_texts()`, picks the threshold on val (max F1), reports test metrics → `metrics.json`: AUROC + bootstrap 95% CI (1,000 resamples), accuracy, macro-F1, TPR@1%FPR (only if ≥1,000 test humans). Include a `--by domain|generator` breakdown.
+- [ ] `src/eval.py`: reads preds.csv + `load_texts()`, picks the threshold on val (max F1), reports test metrics → `metrics.json`: AUROC + bootstrap 95% CI (1,000 resamples), accuracy, macro-F1, TPR@1%FPR (only if ≥1,000 test humans). If val has fewer than 50 rows of either class, the threshold metrics (accuracy, F1) are `null` and only AUROC is reported. Include a `--by domain|generator` breakdown.
 - [ ] `src/baseline_tfidf.py`: word 1–2-grams + char 3–5-grams, `LogisticRegression(class_weight='balanced')`, run on **every** setting, write preds.csv + run_info.json. Also save the top 30 "AI" and top 30 "human" features (good report material).
   - Same script, `--method length`: logistic regression on text length only (characters + words). This is the shortcut sanity check.
 - [ ] `requirements.txt`, `.gitignore`, README "how to reproduce" section
@@ -202,10 +213,12 @@ setting by selecting the ids from that setting's split file.
 - [ ] `notebooks/kaggle_zeroshot.ipynb`: same rule as B, so the notebook only calls the scripts
 - [ ] **What to score:**
   - `ppl`, `logrank`: every text in `load_texts()` (cheap)
-  - `detectgpt`: only the ids in `splits/detectgpt_subset.json` (made by A from `indist` val + test, so `indist`
-    gets about 750 test texts and each LOGO/xdomain test gets roughly a fifth of the subsample), **plus** all ids in
-    the `paraphrase_orig`, `paraphrase` and `paraphrase_human` test sets. Record the time per text (reporting the
-    compute cost is itself a result).
+  - `detectgpt`: only the ids in `splits/detectgpt_subset.json` (1,500 texts, already covering `paraphrase_orig`
+    + 500 `indist` val texts), **plus** the `_para` ids from D (and `paraphrase_human` if made). That gives `indist`
+    and `paraphrase_orig` a 1,000-text test set. LOGO/xdomain get whatever part of the subset falls in their test
+    split (roughly 100 machine texts per held-out generator). **For DetectGPT, report AUROC (with CI) as the
+    headline metric**; threshold metrics are `null` where the val overlap is too small (see `eval.py`).
+    Record the time per text (reporting the compute cost is itself a result).
 - [ ] Fallback: if DetectGPT can't finish by 14 Nov, implement `--method fastdetectgpt` (Fast-DetectGPT, one forward pass) instead.
 
 **Deadlines**
@@ -226,7 +239,8 @@ setting by selecting the ids from that setting's split file.
   - paraphrase the **500 machine texts in the `paraphrase_orig` test set** (A picks them, so the "before" and
     "after" use exactly the same texts)
   - model: start with `humarin/chatgpt_paraphraser_on_T5_base`; try DIPPER only if GPU memory allows.
-    Paraphrase sentence by sentence so long texts don't get truncated
+    Paraphrase sentence by sentence so long texts don't get truncated, then **collapse whitespace**
+    (`" ".join(text.split())`) exactly like A's data (§0.1)
   - write `data/processed/paraphrased.parquet` (§0.1 schema, id suffix `_para`, plus `orig_id`), then upload a new version of the Kaggle Dataset
   - write `splits/paraphrase.json` (§0.2: same val and humans as `paraphrase_orig`, machines swapped for `_para`)
   - sanity check: report BLEU or BERTScore vs the original, so we can show the meaning was kept

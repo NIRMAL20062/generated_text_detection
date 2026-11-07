@@ -26,8 +26,9 @@ M4 (Wang et al., EACL 2024) is a benchmark of paired human and machine texts. We
 | **Source** | https://github.com/mbzuai-nlp/M4 |
 
 This grid (domain × generator) is what makes cross-domain and cross-generator experiments possible.
-To fit our compute budget, we **subsample to at most 1,000 pairs per cell** and use **fixed random seeds** so
-everyone gets the same splits.
+To fit our compute budget, we **subsample to 1,000 machine texts per cell** (PeerRead: 250 papers ≈ 1,000
+reviews) and use **fixed random seeds** so everyone gets the same splits. The final dataset is **38,241 texts
+(13,243 human, 24,998 machine)**; see `results/data_audit.md`.
 
 **Two day-1 checks before building splits:**
 - **Grid audit:** count rows per (domain, generator). Some cells may be missing or small, and some domains
@@ -67,8 +68,8 @@ everyone gets the same splits.
 - **Why:** needs **no labelled data**, so in principle it is not tied to any training generator.
   This makes it an interesting contrast with RoBERTa under LOGO.
 - **Compute:** DetectGPT is expensive (N rewrites × forward passes per text). So we score **one fixed,
-  balanced subsample once** (about 1,500 texts spread evenly over domain × generator × label, plus the
-  paraphrased set), then evaluate each setting on the part of that subsample inside its val/test split.
+  balanced subsample once** (1,500 texts: the 1,000-text paraphrase "before" test set + 500 val texts, plus the
+  paraphrased versions), then evaluate each setting on the part of that subsample inside its val/test split.
   Perplexity and log-rank are cheap, so they score everything.
 - **Fallback:** if DetectGPT is too slow, use **Fast-DetectGPT** (Bao et al., ICLR 2024). It gives a similar
   curvature score from a single forward pass.
