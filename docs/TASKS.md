@@ -142,7 +142,8 @@ Everyone depends on you first, so **do the bootstrap commit today, ship a dev sa
   - `make_splits(df)`: write every A-owned file in §0.2 (`indist`, `logo_*`, `xdomain_*`, `paraphrase_orig`, `detectgpt_subset.json`), **splitting by `group`**. Add an assert that no group appears in two parts of any split.
   - `load_texts()`: the shared loader from §0.1
   - `make_dev_sample()`: write `data/sample_dev.parquet` (~500 rows, all domains and generators)
-  - CLI: `python -m src.data --all`
+  - CLI: `python -m src.data --all`, plus `python -m src.data --check-splits`, which asserts that every id in
+    `splits/*.json` exists in `load_texts()`. Every Kaggle notebook runs it first (see CONTRIBUTING.md §4).
 - [ ] Upload `data/processed/` as the Kaggle Dataset `team20-m4-processed` and share it with B, C and D (§0.4)
 - [ ] `src/eval.py`: reads preds.csv + `load_texts()`, picks the threshold on val (max F1), reports test metrics → `metrics.json`: AUROC + bootstrap 95% CI (1,000 resamples), accuracy, macro-F1, TPR@1%FPR (only if ≥1,000 test humans). Include a `--by domain|generator` breakdown.
 - [ ] `src/baseline_tfidf.py`: word 1–2-grams + char 3–5-grams, `LogisticRegression(class_weight='balanced')`, run on **every** setting, write preds.csv + run_info.json. Also save the top 30 "AI" and top 30 "human" features (good report material).
