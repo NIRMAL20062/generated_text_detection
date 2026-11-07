@@ -114,7 +114,9 @@ otherwise `null`). **Nobody writes their own metric code.**
 - **Commit and open PRs from your own GitHub account.** The repo is graded and the report has a contributions
   section, so don't send code to someone else to push.
 - Only edit files you own. To change the contract or a shared file, ask in the group first.
-- **Never commit** `data/` or model weights (they're in `.gitignore`). **Do commit** `splits/` and `results/**/*.csv|json`.
+- **Never commit** `data/` or model weights (they're in `.gitignore`). The **one exception** is the small
+  `data/sample_dev.parquet` (~500 rows), which is committed so everyone can run `--dev` right after `git pull`.
+  **Do commit** `splits/` and `results/**/*.csv|json` (but not `results/zeroshot_cache/`, which is gitignored).
 - Fixed seed everywhere: `SEED = 42`. No `configs/` folder: CLI arguments + `run_info.json` record everything.
 
 ---
