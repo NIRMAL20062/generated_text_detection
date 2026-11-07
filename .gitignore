@@ -1,0 +1,32 @@
+# Data: never commit raw or processed M4 (see docs/TASKS.md §0.5)
+data/*
+# ...except the tiny dev sample, so everyone gets it through git
+!data/sample_dev.parquet
+
+# Model weights and training outputs
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+checkpoints/
+outputs/
+wandb/
+runs/
+
+# Zero-shot score cache (rebuilt on Kaggle)
+results/zeroshot_cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Notebooks / editors / OS
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.DS_Store
