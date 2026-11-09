@@ -96,7 +96,62 @@ python -m src.eval results/<method>/<setting>/preds.csv --by generator
 ```
 Commit `preds.csv`, `metrics.json` and `run_info.json` together.
 
-## 6. Key dates
+## 6. `.py` or notebook? Both, with different jobs
+
+| | `src/*.py` | `notebooks/*.ipynb` |
+|---|---|---|
+| **Job** | **does** the work: all logic, training, scoring | **runs and shows** the work: GPU runs, plots, demo |
+| **Why** | importable, testable, clean PR diffs, what examiners read | Kaggle/Colab need them; good for figures and explaining |
+| **Rule** | every function lives here | no functions or logic: only `!python -m src.<script>` calls and plotting |
+
+Notebooks hide state (cells run out of order) and make unreadable git diffs, so logic inside one can't be
+reviewed or tested. A notebook should still work if you "Restart & Run All".
+
+**Where to run what** (local laptop has no GPU and ~6 GB RAM):
+
+| Runs fine locally on CPU | Needs a GPU (Kaggle, or Colab as backup) |
+|---|---|
+| `data.py`, `eval.py`, TF-IDF + length baselines, `make_tables.py`, every `--dev` run | RoBERTa training, perplexity / DetectGPT scoring on full data, paraphrasing |
+
+Kaggle and Colab run the same notebook code, so if one is down or out of quota, switch to the other.
+
+## 7. Testing your code
+
+Run all tests from the repo root before every PR (takes seconds, no GPU or full data needed):
+```bash
+python -m pytest tests/ -q
+```
+Write `tests/test_<your_script>.py` for your own file with the same three kinds of test as
+[tests/test_eval.py](tests/test_eval.py):
+
+1. **Known answers:** inputs where you already know the right output.
+   e.g. a perfect detector must get AUROC 1.0; a hand-worked example must give the hand-worked result.
+2. **Bad inputs fail loudly:** a broken file or wrong setting must raise an error, never give a quiet wrong number.
+3. **End to end on the dev sample:** call your script's `main([... "--dev"])` and check the output files exist
+   and follow the contract (`id,split,score`, val + test rows, ids from the right split).
+
+Ideas per role:
+- **Baseline (A):** length-only scores the same as `text.str.len()` ranking; TF-IDF beats AUROC 0.5 on dev.
+- **RoBERTa (B):** train on ~20 dev texts for a few steps: training loss must go down (proves the loop learns);
+  `preds.csv` scores are probabilities in [0, 1].
+- **Zero-shot (C):** a repeated, very predictable text gets a higher log-likelihood than shuffled words;
+  the cache skips ids already scored.
+- **Attack (D):** paraphrased ids end in `_para`, keep `orig_id`, whitespace is collapsed;
+  `make_tables.py` builds every table from fake `metrics.json` files.
+
+Before spending GPU time, always run your script with `--dev` locally first.
+
+## 8. Comments: write for a teammate who has never seen your file
+
+The examiners can ask any of us about any file, so the code has to teach itself.
+- Every file starts with a docstring: what it does, how to run it, its input and output.
+- Every function has a docstring saying what it takes, what it returns and **why** it exists.
+- Explain the idea behind a method in plain words where it's used (what AUROC means, why the threshold is
+  picked on val, what probability curvature is). A small worked example is even better.
+- Comment the **why**, not the what: `# skip: AUROC is undefined with one class` beats `# if statement`.
+- See [src/eval.py](src/eval.py) for the style.
+
+## 9. Key dates
 
 | Date | What |
 |---|---|
