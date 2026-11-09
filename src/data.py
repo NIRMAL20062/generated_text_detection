@@ -235,24 +235,29 @@ def build_dataset(max_per_cell: int = 1000, raw_dir: Path = RAW_DIR, seed: int =
 
 # ---------------------------------------------------------------- splits
 
-def _cut(groups: list[str], fracs: tuple[float, ...], rng: random.Random) -> list[list[str]]:
-    groups = sorted(groups)
-    rng.shuffle(groups)
-    out, start = [], 0
-    for j, f in enumerate(fracs):
-        end = len(groups) if j == len(fracs) - 1 else start + round(f * len(groups))
-        out.append(groups[start:end])
-        start = end
-    return out
+def _pattern(fracs: tuple[float, ...]) -> list[int]:
+    """(0.8, 0.1, 0.1) -> [0]*8 + [1] + [2]: which part each position of a 10-slot cycle goes to."""
+    counts = [round(f * 10) for f in fracs]
+    assert sum(counts) == 10, f"fractions must be multiples of 0.1: {fracs}"
+    return [j for j, c in enumerate(counts) for _ in range(c)]
 
 
 def _split_groups(strata: pd.Series, fracs, seed: int) -> list[set[str]]:
-    """Cut groups into len(fracs) parts, separately inside each stratum."""
+    """Split groups into len(fracs) parts, stratified.
+
+    Groups are shuffled inside each stratum, strata are visited in a fixed order, and ONE running counter
+    walks a repeating pattern across all of them. Remainders carry over between strata, so the totals match
+    `fracs` even when every stratum is tiny (rounding each stratum separately gave small strata no val/test)."""
     parts = [set() for _ in fracs]
+    pattern = _pattern(fracs)
     rng = random.Random(seed)
+    pos = 0
     for _, gs in sorted(strata.groupby(strata).groups.items(), key=lambda kv: kv[0]):
-        for part, chunk in zip(parts, _cut(list(gs), fracs, rng)):
-            part.update(chunk)
+        groups = sorted(gs)
+        rng.shuffle(groups)
+        for g in groups:
+            parts[pattern[pos % len(pattern)]].add(g)
+            pos += 1
     return parts
 
 

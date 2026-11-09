@@ -78,18 +78,18 @@ So splits are made by `group` (hash of the human text; PeerRead: the paper).
 
 | setting | train | val | test | test humans | ratio train | ratio test |
 |---|---|---|---|---|---|---|
-| `indist` | 30628 | 3850 | 3763 | 1312 | 1.89 | 1.87 |
-| `logo_chatGPT` | 19028 | 2148 | 10123 | 5123 | 1.61 | 0.98 |
-| `logo_davinci` | 19040 | 2133 | 10085 | 5085 | 1.59 | 0.98 |
-| `logo_cohere` | 19034 | 2086 | 10119 | 5121 | 1.60 | 0.98 |
-| `logo_dolly` | 19019 | 2116 | 10155 | 5155 | 1.62 | 0.97 |
-| `logo_bloomz` | 19483 | 2159 | 10162 | 5162 | 1.68 | 0.97 |
-| `xdomain_wikipedia` | 27256 | 3055 | 7930 | 2930 | 1.94 | 1.71 |
-| `xdomain_wikihow` | 27552 | 3087 | 7602 | 2602 | 1.88 | 1.92 |
-| `xdomain_reddit` | 27575 | 3078 | 7588 | 2588 | 1.88 | 1.93 |
-| `xdomain_arxiv` | 27573 | 3063 | 7605 | 2605 | 1.88 | 1.92 |
-| `xdomain_peerread` | 27641 | 3084 | 7516 | 2518 | 1.86 | 1.98 |
-| `paraphrase_orig` | 0 | 3850 | 1000 | 500 | - | 1.00 |
+| `indist` | 30602 | 3801 | 3838 | 1339 | 1.89 | 1.87 |
+| `logo_chatGPT` | 19060 | 2116 | 10123 | 5123 | 1.61 | 0.98 |
+| `logo_davinci` | 19069 | 2104 | 10085 | 5085 | 1.60 | 0.98 |
+| `logo_cohere` | 19043 | 2077 | 10119 | 5121 | 1.60 | 0.98 |
+| `logo_dolly` | 19007 | 2128 | 10155 | 5155 | 1.61 | 0.97 |
+| `logo_bloomz` | 19512 | 2130 | 10162 | 5162 | 1.68 | 0.97 |
+| `xdomain_wikipedia` | 27266 | 3045 | 7930 | 2930 | 1.94 | 1.71 |
+| `xdomain_wikihow` | 27560 | 3079 | 7602 | 2602 | 1.88 | 1.92 |
+| `xdomain_reddit` | 27574 | 3079 | 7588 | 2588 | 1.88 | 1.93 |
+| `xdomain_arxiv` | 27588 | 3048 | 7605 | 2605 | 1.88 | 1.92 |
+| `xdomain_peerread` | 27648 | 3077 | 7516 | 2518 | 1.86 | 1.98 |
+| `paraphrase_orig` | 0 | 3801 | 1000 | 500 | - | 1.00 |
 
 `detectgpt_subset.json`: 1500 ids (the `paraphrase_orig` test set + a balanced slice of `indist` val).
 
