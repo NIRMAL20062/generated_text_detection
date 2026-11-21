@@ -1,6 +1,6 @@
 """Zero-shot detectors (role C): perplexity and log-rank under a small causal LM.
 
-    python -m src.zeroshot --method ppl|logrank [--dev]
+    python -m src.zeroshot --method ppl|logrank|fastdetectgpt [--dev] [--full]
 
 Zero-shot methods don't train, so every text is scored ONCE, the scores are cached in
 ``results/zeroshot_cache/<method>.parquet`` (``id, score``), and then one ``preds.csv`` per setting is written by
@@ -9,6 +9,13 @@ selecting that setting's val/test ids from the cache (see docs/TASKS.md §0.3 an
 Score convention: higher = more likely AI.
   ppl     : mean token log-likelihood (machine text is more probable under an LM)
   logrank : -(mean log-rank of the actual tokens)  (machine text uses higher-ranked tokens)
+  fastdetectgpt : Fast-DetectGPT (Bao et al., ICLR 2024), the one-forward-pass fallback for DetectGPT. It measures
+          how far the text's log-likelihood sits above what the LM expects for a *sampled* text (conditional
+          probability curvature), analytically instead of with 20 T5 perturbations:
+              score = (sum_t log p(x_t) - sum_t E[log p]) / sqrt(sum_t Var[log p])
+          with E and Var taken over the LM's own next-token distribution at each position. One model plays both
+          the sampling and scoring role here. Only the DetectGPT subset + paraphrase test ids are scored unless
+          --full is given.
 """
 from __future__ import annotations
 
@@ -23,7 +30,8 @@ import pandas as pd
 
 from src.data import DEV_SPLITS_DIR, ROOT, SEED, SPLITS_DIR, load_split, load_texts
 
-METHODS = ("ppl", "logrank")
+METHODS = ("ppl", "logrank", "fastdetectgpt")
+PARAPHRASE_SETTINGS = ("paraphrase_orig", "paraphrase", "paraphrase_human")
 RESULTS_DIR = ROOT / "results"
 CACHE_DIR = RESULTS_DIR / "zeroshot_cache"
 NOT_SETTINGS = {"detectgpt_subset"}  # split-dir json files that are not evaluation settings
@@ -61,6 +69,15 @@ def token_stats(model, input_ids, attention_mask, method: str):
         if method == "ppl":
             logp = torch.log_softmax(logits, dim=-1).gather(-1, targets.unsqueeze(-1)).squeeze(-1)
             return ((logp * mask).sum(1) / n).cpu().numpy()  # mean log-likelihood
+        if method == "fastdetectgpt":
+            logp_all = torch.log_softmax(logits, dim=-1)
+            logp = logp_all.gather(-1, targets.unsqueeze(-1)).squeeze(-1)
+            p = logp_all.exp()
+            mean_ref = (p * logp_all).sum(-1)  # E[log p(x~)] at each position
+            var_ref = (p * logp_all ** 2).sum(-1) - mean_ref ** 2  # Var[log p(x~)]
+            num = ((logp - mean_ref) * mask).sum(1)
+            den = (var_ref * mask).sum(1).clamp(min=1e-8).sqrt()
+            return (num / den).cpu().numpy()  # higher = more AI
         target_logit = logits.gather(-1, targets.unsqueeze(-1))
         rank = (logits > target_logit).sum(-1).float() + 1.0  # 1 = the LM's top choice
         return (-(torch.log(rank) * mask).sum(1) / n).cpu().numpy()  # -mean log-rank
@@ -131,12 +148,17 @@ def hardware(device: str) -> str:
     return "CPU"
 
 
-def write_setting(method: str, setting: str, scores: pd.Series, dev: bool, run_info: dict) -> int:
+def write_setting(method: str, setting: str, scores: pd.Series, dev: bool, run_info: dict,
+                  partial: bool = False) -> int:
     """preds.csv (val + test rows only; train is never needed) + run_info.json for one setting."""
     split = load_split(setting, dev=dev)
     rows = [(i, name) for name in ("val", "test") for i in split.get(name, [])]
     preds = pd.DataFrame(rows, columns=["id", "split"])
     preds["score"] = preds["id"].map(scores)
+    if partial:  # subset-only methods: keep the ids that were scored; a setting with no scored test id is skipped
+        preds = preds.dropna(subset=["score"])
+        if not (preds["split"] == "test").any():
+            return 0
     if preds["score"].isna().any():
         missing = preds.loc[preds["score"].isna(), "id"].head(3).tolist()
         raise KeyError(f"{setting}: {int(preds['score'].isna().sum())} split ids have no score, e.g. {missing}")
@@ -157,6 +179,8 @@ def main(argv=None) -> int:
     ap.add_argument("--model", default=None, help="scorer LM (default: gpt2-medium; gpt2 with --dev)")
     ap.add_argument("--max-tokens", type=int, default=None, help="default 256; 24 with --dev (CPU smoke test)")
     ap.add_argument("--batch-size", type=int, default=None, help="default 16 on GPU, 8 on CPU")
+    ap.add_argument("--full", action="store_true",
+                    help="fastdetectgpt: score every val/test id (like ppl) instead of the DetectGPT subset only")
     ap.add_argument("--settings", nargs="*", default=None, help="only these settings (default: every split file)")
     args = ap.parse_args(argv)
 
@@ -166,7 +190,7 @@ def main(argv=None) -> int:
     device = pick_device()
     model_name = args.model or ("gpt2" if args.dev else "gpt2-medium")
     max_tokens = args.max_tokens or (24 if args.dev else 256)
-    batch_size = args.batch_size or (16 if device == "cuda" else 8)
+    batch_size = args.batch_size or (8 if args.method == "fastdetectgpt" or device == "cpu" else 16)
     start = time.time()
 
     df = load_texts(dev=args.dev)
@@ -177,6 +201,12 @@ def main(argv=None) -> int:
         sp = load_split(s, dev=args.dev)
         needed.update(sp.get("val", []))
         needed.update(sp.get("test", []))
+    partial = args.method == "fastdetectgpt" and not args.full
+    if partial:  # TASKS.md §C: the DetectGPT subset + every test id of the paraphrase settings (incl. D's _para ids)
+        needed = set(load_split("detectgpt_subset", dev=args.dev))
+        for s in settings:
+            if s in PARAPHRASE_SETTINGS:
+                needed.update(load_split(s, dev=args.dev).get("test", []))
     df = df[df["id"].isin(needed)]
     print(f"{args.method}: {len(df)} texts, {len(settings)} settings, model={model_name}, device={device}", flush=True)
 
@@ -186,6 +216,8 @@ def main(argv=None) -> int:
     print(f"scored {info['n_scored']} new texts ({info['n_cached']} from cache) in {info['seconds']:.0f}s", flush=True)
 
     scores = pd.read_parquet(cache_path).set_index("id")["score"]
+    if partial:
+        scores = scores[scores.index.isin(needed)]
     run_info = {
         "method": args.method, "git_commit": git_commit(), "seed": SEED, "model": model_name,
         "max_tokens": max_tokens, "batch_size": batch_size, "dev": args.dev,
@@ -194,8 +226,8 @@ def main(argv=None) -> int:
         "total_runtime_seconds": round(time.time() - start, 1),
     }
     for s in settings:
-        n = write_setting(args.method, s, scores, args.dev, run_info)
-        print(f"  {s}: {n} rows")
+        n = write_setting(args.method, s, scores, args.dev, run_info, partial=partial)
+        print(f"  {s}: {n} rows" if n else f"  {s}: skipped (no scored test ids)")
     return 0
 
 
