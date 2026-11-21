@@ -69,18 +69,28 @@ Ask in the group chat first. The owner makes the change.
 
 ## 4. Running on Kaggle (GPU jobs: B, C, D)
 
-1. **New notebook** → Settings: **GPU T4**, **Internet on**.
-2. **Add data** → our private dataset **`team20-m4-processed`** (A shares it).
+0. **One-time: verify your phone on Kaggle** (kaggle.com → Settings → Phone verification). Without it, Kaggle
+   silently turns **Internet off** even when you switch it on, and `git clone` fails with
+   `Could not resolve host: github.com`.
+1. **One-time: get access to the data.** Comment your Kaggle username on issue #6. A shares the private dataset
+   **`nirmal222/team20-m4-processed`** (one file, `m4_en.parquet`, 44 MB) with you.
+2. **New notebook** → Settings: **GPU T4**, **Internet on** → **Add Input** → search `team20-m4-processed`.
+   It mounts at `/kaggle/input/datasets/nirmal222/team20-m4-processed/`. The cell below finds it either way.
 3. First cells (keep all logic in `src/`, never in the notebook):
    ```python
    !git clone -b main https://github.com/NIRMAL20062/generated_text_detection.git
    %cd generated_text_detection
    !pip install -q -r requirements.txt
-   !mkdir -p data && ln -s /kaggle/input/team20-m4-processed data/processed
-   !python -m src.data --check-splits      # asserts every split id exists in the data
+   !mkdir -p data && ln -sfn "$(dirname "$(find /kaggle/input -name m4_en.parquet | head -1)")" data/processed
+   !ls -l data/processed/                   # must show m4_en.parquet
+   !python -m src.data --check-splits      # must print: OK: 13 split files in splits match 38241 texts
    !python -m src.train_roberta --setting indist
    ```
    To test code that isn't merged yet, clone your branch instead of `main` (`-b b-roberta`).
+
+   **If `pip install` fails or breaks torch:** skip that line. `src/data.py`, `src/eval.py` and the baselines
+   were tested on Kaggle's preinstalled packages (Python 3.13, pandas 2.3.3, scikit-learn 1.6.1, 21 Nov).
+   `run_info.json` records the versions you actually used.
 4. **Bring results back:** download `results/<method>/<setting>/` from the notebook's **Output** tab, copy it
    into your local clone, then commit and open a PR from your own machine.
    Model weights stay in Kaggle Output or Google Drive, never in git.
