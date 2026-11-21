@@ -140,7 +140,7 @@ def write_setting(method: str, setting: str, scores: pd.Series, dev: bool, run_i
     if preds["score"].isna().any():
         missing = preds.loc[preds["score"].isna(), "id"].head(3).tolist()
         raise KeyError(f"{setting}: {int(preds['score'].isna().sum())} split ids have no score, e.g. {missing}")
-    out = RESULTS_DIR / ("dev" if dev else "") / method / setting
+    out = (ROOT / "results_dev" if dev else RESULTS_DIR) / method / setting  # eval.py rejects --dev preds inside results/
     out.mkdir(parents=True, exist_ok=True)
     preds.to_csv(out / "preds.csv", index=False)
     (out / "run_info.json").write_text(json.dumps({**run_info, "setting": setting, "n_val": int((preds.split == "val").sum()),
