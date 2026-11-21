@@ -7,6 +7,7 @@
 ## Checklist
 - [ ] I only changed files my role owns (see the role table in docs/TASKS.md), or the group agreed to the change
 - [ ] The script runs with `--dev` in under 2 minutes on CPU
+- [ ] `python -m pytest tests/ -q` passes (and my new code has a test)
 - [ ] No `data/` files (except `data/sample_dev.parquet`) or model weights are committed
 - [ ] Output follows the contract in docs/TASKS.md §0 (`preds.csv` columns, setting names, score = higher means AI)
 - [ ] For results: `preds.csv` + `metrics.json` (from `src.eval`) + `run_info.json` are committed together

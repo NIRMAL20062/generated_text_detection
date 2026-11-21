@@ -11,4 +11,5 @@ scipy>=1.13
 sentencepiece==0.2.2   # T5 tokenizer (DetectGPT perturbations, paraphraser)
 accelerate>=1.10
 tqdm>=4.66
+pytest>=8   # tests: python -m pytest tests/ -q
 matplotlib>=3.9
