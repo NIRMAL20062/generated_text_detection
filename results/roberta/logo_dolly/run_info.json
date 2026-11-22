@@ -1,0 +1,27 @@
+{
+  "method": "roberta",
+  "setting": "logo_dolly",
+  "git_commit": "953d0bbd9c63ebbedbf39759815586c7a09d3228",
+  "seed": 42,
+  "dev": false,
+  "predict_only": false,
+  "model": "roberta-base",
+  "max_len": 256,
+  "batch_size": 16,
+  "lr": 2e-05,
+  "epochs": 1,
+  "fp16": true,
+  "class_weights": [
+    1.306682249415647,
+    0.8099113686722346
+  ],
+  "n_train": 19007,
+  "n_val": 2128,
+  "n_test": 10155,
+  "best_val_auroc": 0.9935515071091818,
+  "train_seconds": 285.7,
+  "steps": 1188,
+  "seconds_per_text_inference": 0.00341,
+  "hardware": "Tesla T4",
+  "total_runtime_seconds": 348.3
+}

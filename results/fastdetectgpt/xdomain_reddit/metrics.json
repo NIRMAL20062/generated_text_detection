@@ -1,0 +1,58 @@
+{
+  "method": "fastdetectgpt",
+  "setting": "xdomain_reddit",
+  "dev": false,
+  "coverage": {
+    "val": 0.152,
+    "test": 0.0395
+  },
+  "auroc": 0.8143111111111112,
+  "auroc_ci95": [
+    0.7618030946155946,
+    0.8610232203361342
+  ],
+  "threshold": 2.818493366241455,
+  "accuracy": 0.7833333333333333,
+  "macro_f1": 0.7778815596131723,
+  "tpr_at_1pct_fpr": null,
+  "n_test": 300,
+  "n_test_human": 150,
+  "n_test_machine": 150,
+  "n_val": 468,
+  "n_val_human": 240,
+  "n_val_machine": 228,
+  "by_domain": {
+    "reddit": {
+      "auroc": 0.8143111111111112,
+      "n_machine": 150,
+      "n_human": 150
+    }
+  },
+  "by_generator": {
+    "bloomz": {
+      "auroc": 0.30294117647058827,
+      "n_machine": 30,
+      "n_human": 68
+    },
+    "chatGPT": {
+      "auroc": 0.9944444444444445,
+      "n_machine": 30,
+      "n_human": 60
+    },
+    "cohere": {
+      "auroc": 0.9654320987654321,
+      "n_machine": 30,
+      "n_human": 54
+    },
+    "davinci": {
+      "auroc": 0.9400000000000001,
+      "n_machine": 30,
+      "n_human": 65
+    },
+    "dolly": {
+      "auroc": 0.8672043010752688,
+      "n_machine": 30,
+      "n_human": 62
+    }
+  }
+}

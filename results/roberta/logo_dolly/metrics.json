@@ -1,0 +1,58 @@
+{
+  "method": "roberta",
+  "setting": "logo_dolly",
+  "dev": false,
+  "coverage": {
+    "val": 1.0,
+    "test": 1.0
+  },
+  "auroc": 0.9194442483026188,
+  "auroc_ci95": [
+    0.9145839716310005,
+    0.9245577057747576
+  ],
+  "threshold": 0.9980238676071168,
+  "accuracy": 0.8253077301821763,
+  "macro_f1": 0.8226938229909184,
+  "tpr_at_1pct_fpr": 0.3648,
+  "n_test": 10155,
+  "n_test_human": 5155,
+  "n_test_machine": 5000,
+  "n_val": 2128,
+  "n_val_human": 815,
+  "n_val_machine": 1313,
+  "by_domain": {
+    "arxiv": {
+      "auroc": 0.820669,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "peerread": {
+      "auroc": 0.9083051948051948,
+      "n_machine": 1000,
+      "n_human": 1155
+    },
+    "reddit": {
+      "auroc": 0.9873529999999999,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "wikihow": {
+      "auroc": 0.9789259999999999,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "wikipedia": {
+      "auroc": 0.854843,
+      "n_machine": 1000,
+      "n_human": 1000
+    }
+  },
+  "by_generator": {
+    "dolly": {
+      "auroc": 0.9194442483026188,
+      "n_machine": 5000,
+      "n_human": 5155
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "method": "ppl",
+  "git_commit": "953d0bbd9c63ebbedbf39759815586c7a09d3228",
+  "seed": 42,
+  "model": "gpt2-medium",
+  "max_tokens": 256,
+  "batch_size": 16,
+  "dev": false,
+  "hardware": "Tesla T4",
+  "seconds_per_text": 0.015421489259714902,
+  "total_runtime_seconds": 640.6,
+  "setting": "logo_dolly",
+  "n_val": 2128,
+  "n_test": 10155
+}

@@ -1,0 +1,15 @@
+{
+  "method": "logrank",
+  "git_commit": "953d0bbd9c63ebbedbf39759815586c7a09d3228",
+  "seed": 42,
+  "model": "gpt2-medium",
+  "max_tokens": 256,
+  "batch_size": 16,
+  "dev": false,
+  "hardware": "Tesla T4",
+  "seconds_per_text": 0.01577189994125893,
+  "total_runtime_seconds": 645.1,
+  "setting": "logo_bloomz",
+  "n_val": 2130,
+  "n_test": 10162
+}
