@@ -42,7 +42,7 @@ baseline_tfidf.py  train_roberta.py   zeroshot.py         paraphrase.py
 
 Settings (exact strings): `indist`, `logo_<gen>` ×5, `xdomain_<dom>` ×5, `paraphrase_orig`, `paraphrase`,
 `paraphrase_human` (optional). Generators: `chatGPT davinci cohere dolly bloomz`. Domains:
-`wikipedia wikihow reddit arxiv peerread`. Methods: `length tfidf_lr roberta ppl logrank detectgpt`
+`wikipedia wikihow reddit arxiv peerread`. Methods: `length tfidf_lr roberta ppl logrank fastdetectgpt`
 (`fastdetectgpt` as fallback).
 
 ## 4. Hard rules

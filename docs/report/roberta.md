@@ -1,8 +1,7 @@
 # Report draft: RoBERTa detector (role B)
 
-> Draft for issue #15. The method text below describes what `src/train_roberta.py` actually does. Numbers marked
-> `__` are blanks: fill them from `results/roberta/<setting>/metrics.json` and `run_info.json` after the Kaggle
-> run. Do not report a number that is not in those files.
+> Draft for issue #15. The method text below describes what `src/train_roberta.py` actually does. All numbers are
+> read from `results/roberta/<setting>/metrics.json` and `run_info.json`.
 
 ## 1. Method
 
@@ -42,18 +41,18 @@ reports AUROC with a bootstrap 95% confidence interval on the test split.
 
 | Setting | AUROC (95% CI) |
 |---|---|
-| `indist` | __ |
-| `paraphrase_orig` | __ |
-| `paraphrase` | __ |
-| `paraphrase_human` | __ |
+| `indist` | 0.991 [0.989, 0.993] |
+| `paraphrase_orig` | 0.990 [0.984, 0.995] |
+| `paraphrase` | 0.984 [0.978, 0.990] |
+| `paraphrase_human` | 0.970 [0.961, 0.979] |
 
 | Held-out generator (LOGO) | AUROC | Held-out domain | AUROC |
 |---|---|---|---|
-| chatGPT | __ | wikipedia | __ |
-| davinci | __ | wikihow | __ |
-| cohere | __ | reddit | __ |
-| dolly | __ | arxiv | __ |
-| bloomz | __ | peerread | __ |
+| chatGPT | 0.998 | wikipedia | 0.845 |
+| davinci | 0.971 | wikihow | 0.844 |
+| cohere | 0.985 | reddit | 0.983 |
+| dolly | 0.919 | arxiv | 0.907 |
+| bloomz | 0.881 | peerread | 0.935 |
 
 Points to discuss once the numbers exist (delete any that the numbers do not support):
 - How much does AUROC fall from `indist` to the held-out generators? Which generator is hardest, and is the drop
@@ -69,11 +68,11 @@ Take these from `run_info.json` (`train_seconds`, `seconds_per_text_inference`, 
 
 | Run | Training time | Inference per text | Hardware |
 |---|---|---|---|
-| `indist` | __ | __ | __ |
-| `logo_*` (mean of 5) | __ | __ | __ |
-| `xdomain_*` (mean of 5) | __ | __ | __ |
+| `indist` | 7.7 min | 3.2 ms | Tesla T4 |
+| `logo_*` (mean of 5) | 4.8 min | 3.2 ms | Tesla T4 |
+| `xdomain_*` (mean of 5) | 6.9 min | 3.2 ms | Tesla T4 |
 
-For the cost comparison with the zero-shot methods: RoBERTa pays a training cost once per setting (about __ minutes
+For the cost comparison with the zero-shot methods: RoBERTa pays a training cost once per setting (about 8 minutes
 on a T4), after which scoring is as cheap as one forward pass per text, similar to `ppl` and `logrank`.
 
 ## 5. Caveats to state
@@ -83,4 +82,6 @@ on a T4), after which scoring is as cheap as one forward pass per text, similar 
 - Texts are truncated to 256 tokens, so long arXiv and PeerRead texts are judged on their opening part only.
 - Hyperparameters were not tuned; the values above are common defaults.
 - LOGO and cross-domain test sets contain fewer texts than `indist`, so their intervals are wider.
-- The `paraphrase*` settings reuse the `indist` model and score only the 1,000-text test sets of those settings.
+- The `paraphrase*` settings reuse the `indist` model and score the 1,000-text test sets of those settings (plus the shared 3,801-text val set, used for the threshold).
+- Validation is used twice, to pick the best checkpoint and to pick the threshold, so accuracy and macro-F1 are
+  slightly optimistic. AUROC does not use the threshold and is not affected.

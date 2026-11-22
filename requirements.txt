@@ -8,7 +8,7 @@ pandas==3.0.6
 pyarrow==26.0.0
 numpy>=2.0,<3
 scipy>=1.13
-sentencepiece==0.2.2   # T5 tokenizer (DetectGPT perturbations, paraphraser)
+sentencepiece==0.2.2   # T5 tokenizer (paraphraser)
 accelerate>=1.10
 tqdm>=4.66
 pytest>=8   # tests: python -m pytest tests/ -q

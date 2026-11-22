@@ -4,7 +4,7 @@ Deep Learning course project, Team 20. We detect whether a text is human-written
 whether detectors still work on **unseen generators**, **unseen domains**, and **paraphrased** AI text, using the
 [M4](https://github.com/mbzuai-nlp/M4) benchmark (English).
 
-**Detectors:** TF-IDF + logistic regression (baseline) → fine-tuned RoBERTa → zero-shot perplexity / log-rank / DetectGPT.
+**Detectors:** TF-IDF + logistic regression (baseline) → fine-tuned RoBERTa → zero-shot perplexity / log-rank / Fast-DetectGPT (the one-pass form of DetectGPT).
 **Settings:** in-distribution, leave-one-generator-out, leave-one-domain-out, paraphrase attack.
 
 ## Team
@@ -23,6 +23,8 @@ whether detectors still work on **unseen generators**, **unseen domains**, and *
 - [docs/ROADMAP.md](docs/ROADMAP.md): what we're building, the evaluation settings, timeline, risks
 - [docs/TASKS.md](docs/TASKS.md): who codes what, and the shared data/split/prediction formats (read §0 first)
 - [CONTRIBUTING.md](CONTRIBUTING.md): how we work day to day (branches, PRs, Kaggle runs, getting results back)
+- [report/report.tex](report/report.tex): the project report (course NLE LaTeX template; figures in `report/figures/`)
+- [docs/viva_A.md](docs/viva_A.md): viva notes for the data, evaluation and baseline part
 
 ## Setup
 
