@@ -39,6 +39,7 @@ import scipy.sparse as sp
 import sklearn
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
@@ -64,25 +65,43 @@ class TfidfLR:
     def __init__(self, C: float, max_chars: int):
         self.C, self.max_chars = C, max_chars
         self.word, self.char = TfidfVectorizer(**WORD), TfidfVectorizer(**CHAR)
-        self.lr = LogisticRegression(C=C, class_weight="balanced", solver="liblinear", max_iter=1000,
-                                     random_state=SEED)
 
     def _cut(self, texts: pd.Series) -> pd.Series:
         return texts.str.slice(0, self.max_chars) if self.max_chars else texts
 
-    def fit(self, texts: pd.Series, y: np.ndarray) -> "TfidfLR":
+    def _lr(self, C: float) -> LogisticRegression:
+        return LogisticRegression(C=C, class_weight="balanced", solver="liblinear", max_iter=1000, random_state=SEED)
+
+    def fit(self, texts: pd.Series, y: np.ndarray, val_texts: pd.Series | None = None,
+            val_y: np.ndarray | None = None, Cs: list[float] | None = None) -> "TfidfLR":
+        """Vectorise once. With val data and several Cs, keep the C with the best val AUROC (never test)."""
         t = self._cut(texts)
         X = sp.hstack([self.word.fit_transform(t), self.char.fit_transform(t)], format="csr")
-        self.lr.fit(X, y)
+        self.val_auroc = {}
+        if Cs and len(Cs) > 1 and val_texts is not None and len(set(val_y)) == 2:
+            Xv = self._X(val_texts)
+            best = None
+            for C in Cs:
+                lr = self._lr(C).fit(X, y)
+                auc = float(roc_auc_score(val_y, lr.predict_proba(Xv)[:, 1]))
+                self.val_auroc[str(C)] = round(auc, 5)
+                print(f"    C={C}: val AUROC {auc:.4f}", flush=True)
+                if best is None or auc > best[0]:
+                    best = (auc, C, lr)
+            _, self.C, self.lr = best
+        else:
+            self.lr = self._lr(self.C).fit(X, y)
         return self
 
-    def score(self, texts: pd.Series) -> np.ndarray:
+    def _X(self, texts: pd.Series):
         t = self._cut(texts)
-        X = sp.hstack([self.word.transform(t), self.char.transform(t)], format="csr")
-        return self.lr.predict_proba(X)[:, 1]          # P(machine): higher = more AI
+        return sp.hstack([self.word.transform(t), self.char.transform(t)], format="csr")
+
+    def score(self, texts: pd.Series) -> np.ndarray:
+        return self.lr.predict_proba(self._X(texts))[:, 1]          # P(machine): higher = more AI
 
     def params(self) -> dict:
-        return {"C": self.C, "max_chars": self.max_chars, "solver": "liblinear", "class_weight": "balanced",
+        return {"C": self.C, "val_auroc_by_C": self.val_auroc, "max_chars": self.max_chars, "solver": "liblinear", "class_weight": "balanced",
                 "word": _jsonable(WORD), "char": _jsonable(CHAR),
                 "n_features": len(self.word.vocabulary_) + len(self.char.vocabulary_)}
 
@@ -111,7 +130,7 @@ class LengthLR:
     def _feats(texts: pd.Series) -> np.ndarray:
         return np.log1p(np.column_stack([texts.str.len(), texts.str.split().str.len()]).astype(float))
 
-    def fit(self, texts: pd.Series, y: np.ndarray) -> "LengthLR":
+    def fit(self, texts: pd.Series, y: np.ndarray, *_, **__) -> "LengthLR":
         self.model.fit(self._feats(texts), y)
         return self
 
@@ -158,7 +177,7 @@ def available_settings(dev: bool) -> list[str]:
 # ---------------------------------------------------------------- run
 
 def run_setting(setting: str, method: str, texts: pd.DataFrame, out_root: Path, dev: bool,
-                C: float, max_chars: int, cache: dict) -> Path:
+                C: list[float], max_chars: int, cache: dict) -> Path:
     """Train on the setting's train part (or reuse the indist model), score val + test, write the files."""
     t0 = time.time()
     split = load_split(setting, dev=dev)
@@ -173,7 +192,10 @@ def run_setting(setting: str, method: str, texts: pd.DataFrame, out_root: Path, 
         tr = texts.loc[train_ids]
         print(f"[{method}/{setting}] training on {train_setting} train: {len(tr)} texts", flush=True)
         t_fit = time.time()
-        model = make_model(method, C, max_chars).fit(tr["text"], tr["label"].to_numpy())
+        val_ids = load_split(train_setting, dev=dev)["val"]
+        va = texts.loc[val_ids]
+        model = make_model(method, C[0], max_chars).fit(tr["text"], tr["label"].to_numpy(),
+                                                        va["text"], va["label"].to_numpy(), Cs=C)
         n_train, train_secs = len(tr), round(time.time() - t_fit, 1)
         cache[train_setting] = (model, n_train, train_secs)
 
@@ -212,7 +234,8 @@ def main(argv=None) -> int:
     ap.add_argument("--method", choices=METHODS, default="tfidf_lr")
     ap.add_argument("--setting", nargs="+", help="setting names (default: every available setting)")
     ap.add_argument("--dev", action="store_true", help="data/sample_dev.parquet + splits/dev, output to results_dev/")
-    ap.add_argument("--C", type=float, default=1.0, help="tfidf_lr: inverse regularisation strength")
+    ap.add_argument("--C", type=float, nargs="+", default=[0.25, 1.0, 4.0, 16.0],
+                    help="tfidf_lr: inverse regularisation strength(s); with several, the best on val AUROC is kept")
     ap.add_argument("--max-chars", type=int, default=0, help="tfidf_lr: use only the first N chars (0 = all)")
     ap.add_argument("--out-dir", type=Path, help="default: results/ (results_dev/ with --dev)")
     a = ap.parse_args(argv)

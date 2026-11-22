@@ -51,3 +51,10 @@ def test_top_features_has_30_each_way(tmp_path):
 def test_dev_output_refuses_results_dir():
     with pytest.raises(ValueError, match="must not go inside results/"):
         bl.main(["--dev", "--out-dir", str(bl.ROOT / "results")])
+
+
+def test_C_is_picked_on_val_and_recorded(tmp_path):
+    bl.main(["--dev", "--setting", "indist", "--C", "0.1", "10", "--out-dir", str(tmp_path)])
+    hp = json.loads((tmp_path / "tfidf_lr" / "indist" / "run_info.json").read_text())["hyperparameters"]
+    assert set(hp["val_auroc_by_C"]) == {"0.1", "10.0"}
+    assert hp["C"] == max((v, float(k)) for k, v in hp["val_auroc_by_C"].items())[1]
