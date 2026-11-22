@@ -5,6 +5,9 @@
 \documentclass{nle}
 
 \usepackage{graphicx}
+\usepackage{url}
+\def\UrlBreaks{\do\/\do\_\do\.}
+\setlength{\emergencystretch}{2em}
 \newcommand\TBD[1]{\textbf{[#1]}}
 \newcommand\eg{{\it e.g.\ }}
 
@@ -98,7 +101,7 @@ both sides of a split. Table~\ref{tab:settings} lists the settings.
 
 \begin{table}
   \caption{Evaluation settings. All splits are by group. Sizes from \texttt{results/data\_audit.md}.}
-  \begin{tabular}{llll}
+  \resizebox{\textwidth}{!}{\begin{tabular}{llll}
   \hline\hline
   Setting & Train / val & Test & Question \\
   \hline
@@ -107,7 +110,7 @@ both sides of a split. Table~\ref{tab:settings} lists the settings.
   \texttt{xdomain\_<dom>} ($\times$5) & other 4 domains & only \texttt{<dom>} & unseen domain \\
   \texttt{paraphrase\_orig} $\to$ \texttt{paraphrase} & \texttt{indist} model & 500 machine + 500 human & paraphrase attack \\
   \hline\hline
-  \end{tabular}
+  \end{tabular}}
   \label{tab:settings}
 \end{table}
 
@@ -308,7 +311,7 @@ consequence.
   \item \emph{Formatting artifacts in M4 human texts.} The strongest ``human'' TF-IDF features in \texttt{indist}
         are leftovers of the source pages, not writing style: \texttt{references}, \texttt{external links}
         (Wikipedia section titles), \texttt{\_url\_0\_} (Reddit link placeholders) and the punctuation pattern
-        ``\texttt{. ,}'' left where wikiHow step titles were removed (\texttt{results/tfidf\_lr/indist/top\_features.csv}).
+        ``\texttt{. ,}'' left where wikiHow step titles were removed (\path{results/tfidf_lr/indist/top_features.csv}).
         These leftovers are common in human texts and almost absent from machine texts: 51\% of human texts contain
         at least one of them against 2\% of machine texts (Wikipedia 97\% vs 4\%, wikiHow 99.8\% vs 3\%, Reddit 46\%
         vs 0.6\%; \texttt{results/artifacts.md}).
@@ -330,7 +333,7 @@ in the human texts mean that in-distribution scores of supervised detectors on M
 
 \section*{Reproducibility}
 All code, split files and results are in the team repository
-(\texttt{github.com/NIRMAL20062/generated\_text\_detection}). Every run writes \texttt{run\_info.json} with the git
+(\url{github.com/NIRMAL20062/generated_text_detection}). Every run writes \texttt{run\_info.json} with the git
 commit, seed, hyperparameters, hardware and runtime; the README lists every command, and each script has a
 \texttt{--dev} mode that runs on a committed sample in under two minutes.
 
