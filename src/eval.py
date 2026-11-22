@@ -49,6 +49,8 @@ def load_preds(path: Path, texts: pd.DataFrame) -> pd.DataFrame:
     The detector only gives us (id, split, score). The true answer (label 0 = human, 1 = machine)
     comes from the dataset, so a detector can never "grade itself".
     """
+    # dtype=str for id: ids like "00123" would otherwise be parsed as the integer 123, lose the
+    # leading zeros, and then fail to match the string ids in the dataset (Check 5 would fire).
     preds = pd.read_csv(path, dtype={"id": str, "split": str})
 
     # Check 1: the three required columns exist.
@@ -74,6 +76,8 @@ def load_preds(path: Path, texts: pd.DataFrame) -> pd.DataFrame:
     unknown = merged["label"].isna()
     if unknown.any():
         raise ValueError(f"{path}: {unknown.sum()} ids not in load_texts(), e.g. {merged.loc[unknown, 'id'].iloc[0]}")
+    # After a left merge pandas stores label as float (NaN forces float). Cast back to int so the
+    # sklearn metrics and the `yt == 0` counts below see clean 0/1 values.
     merged["label"] = merged["label"].astype(int)
     return merged
 
@@ -101,6 +105,7 @@ def check_against_split(preds: pd.DataFrame, method: str, setting: str, dev: boo
         stray = ids - allowed          # ids the detector called "val"/"test" that are not in that part
         if stray:
             raise ValueError(f"{len(stray)} '{part}' ids are not in {split_file.name}[{part}], e.g. {next(iter(stray))}")
+        # `if allowed` guards against division by zero when a split has no val part (None = n/a).
         coverage[part] = round(len(ids) / len(allowed), 4) if allowed else None
     if coverage["test"] is not None and coverage["test"] < 1 and method not in SUBSET_METHODS:
         raise ValueError(f"only {coverage['test']:.1%} of {split_file.name}[test] was scored; "
@@ -124,6 +129,8 @@ def auroc(y: np.ndarray, s: np.ndarray) -> float | None:
     present, because then there is nothing to rank against.
     """
     if len(np.unique(y)) < 2:
+        # Without this guard roc_auc_score raises ValueError (e.g. a domain slice with no humans),
+        # which would crash the whole evaluation over one empty breakdown cell.
         return None
     return float(roc_auc_score(y, s))
 
@@ -146,18 +153,29 @@ def bootstrap_auroc_ci(y: np.ndarray, s: np.ndarray, groups: np.ndarray | None =
     if groups is None:
         groups = np.arange(len(y))
     # row numbers belonging to each group, computed once
+    # return_inverse maps each row's group name to an integer 0..n_groups-1.
+    # argsort(group_idx) lists rows ordered by group; bincount gives each group's size; cumsum of the
+    # sizes gives where one group ends and the next begins, so np.split cuts the list per group.
+    # Doing this once (not per resample) keeps 1000 resamples fast: O(rows) setup, then just indexing.
     _, group_idx = np.unique(groups, return_inverse=True)
     members = np.split(np.argsort(group_idx, kind="stable"), np.cumsum(np.bincount(group_idx))[:-1])
     n_groups = len(members)
     stats = []
     for _ in range(n_boot):
+        # Same number of groups as the original (n_groups): the resample must be the same "size" of
+        # experiment, otherwise the spread of AUROC values would not match our real test set.
         picked = rng.integers(0, n_groups, n_groups)              # n_groups random groups, repeats allowed
         idx = np.concatenate([members[g] for g in picked])        # all rows of the picked groups
         if y[idx].min() == y[idx].max():       # resample drew only one class: AUROC undefined, skip it
+            # Skipping (instead of counting it as 0.5) avoids inventing values; it only happens on tiny
+            # test sets, and if it happens every time we return (None, None) below.
             continue
         stats.append(roc_auc_score(y[idx], s[idx]))
     if not stats:
         return None, None
+    # Percentile method: 2.5th and 97.5th percentiles leave 2.5% in each tail = a 95% interval.
+    # Tradeoff: simple and needs no normality assumption; more resamples (N_BOOT) = more stable ends
+    # but slower. 1000 is the usual compromise for a 95% interval.
     lo, hi = np.percentile(stats, [2.5, 97.5])
     return float(lo), float(hi)
 
@@ -179,10 +197,13 @@ def best_threshold(y: np.ndarray, s: np.ndarray) -> float:
         t = 0.8 -> top 2 = two machines: TP=2 FP=0 FN=1 TN=2 -> macro-F1 0.80 (the best, so t = 0.8)
     (tests/test_eval.py checks this example.)
     """
+    # Sorting by -s gives descending order. kind="stable" keeps tied scores in their original order,
+    # so the result is identical on every run (default quicksort is not stable).
     order = np.argsort(-s, kind="stable")        # row positions sorted by score, highest first
     s_sorted, y_sorted = s[order], y[order]
     P, N = y.sum(), len(y) - y.sum()             # total machine texts, total human texts
     tp = np.cumsum(y_sorted)                     # TP if we cut after position k (for every k)
+    # arange(1..n) = k, how many texts we called "machine" at each cut; the ones that are not TP are FP.
     fp = np.arange(1, len(y) + 1) - tp
     fn, tn = P - tp, N - fp
     # F1 = 2TP / (2TP + FP + FN); for the human class the roles of TP and TN swap.
@@ -191,6 +212,9 @@ def best_threshold(y: np.ndarray, s: np.ndarray) -> float:
     f1_human = 2 * tn / np.maximum(2 * tn + fn + fp, 1)
     macro = (f1_machine + f1_human) / 2
     # Two texts with the same score must get the same prediction, so only cut where the score changes.
+    # Cut after position k only if the next score differs. Otherwise "score >= t" (used in evaluate)
+    # would also flag the tied text after k, and the F1 we picked would not be the F1 we get.
+    # The final True: cutting after the very last text (everything = machine) is always allowed.
     valid = np.append(s_sorted[:-1] != s_sorted[1:], True)
     k = np.flatnonzero(valid)[np.argmax(macro[valid])]
     return float(s_sorted[k])
@@ -204,6 +228,9 @@ def tpr_at_fpr(y: np.ndarray, s: np.ndarray, target: float = TARGET_FPR) -> floa
     high AUROC can still be useless at 1% FPR.
     roc_curve gives every (FPR, TPR) point; we take the best TPR among points with FPR <= target.
     """
+    # roc_curve always includes the point (FPR=0, TPR=0), so `fpr <= target` is never empty and .max()
+    # never fails. We take the max because several thresholds can share FPR <= 1%; the best is fair
+    # here since it is a property of the ranking, like AUROC (not a threshold tuned for accuracy).
     fpr, tpr, _ = roc_curve(y, s)
     return float(tpr[fpr <= target].max())
 
@@ -230,6 +257,8 @@ def breakdown(test: pd.DataFrame, by: str, texts: pd.DataFrame) -> dict:
             # every group in the whole dataset that contains a machine text from this generator
             gen_groups = set(texts.loc[(texts["label"] == 1) & (texts["generator"] == value), "group"])
             h = humans[humans["group"].isin(gen_groups)]
+        # Each slice is machine-of-this-value vs its matching humans. Using ALL humans instead would
+        # mix in humans from other domains/topics and make the per-domain number meaningless.
         part = pd.concat([m, h])
         out[value] = {
             "auroc": auroc(part["label"].to_numpy(), part["score"].to_numpy()),
@@ -269,6 +298,8 @@ def evaluate(preds: pd.DataFrame, texts: pd.DataFrame) -> dict:
     # The threshold is chosen on val, then applied unchanged to test.
     if min(n_val_h, n_val_m) >= MIN_VAL_PER_CLASS:
         t = best_threshold(yv, sv)
+        # ">=" must match best_threshold's rule ("top k" includes the text scoring exactly t).
+        # Test scores are never looked at when t is chosen: that is what keeps accuracy honest.
         pred = (st >= t).astype(int)
         m.update(threshold=t, accuracy=float(accuracy_score(yt, pred)),
                  macro_f1=float(f1_score(yt, pred, average="macro")))
@@ -302,6 +333,8 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
 
     # The folder names tell us what this run is: results/<method>/<setting>/preds.csv
+    # Tradeoff: no --method/--setting flags to forget or mistype; the path IS the label. The cost is
+    # that the folder layout must follow the contract, which check_against_split enforces.
     setting, method = a.preds.parent.name, a.preds.parent.parent.name
     # Dev runs must never land in results/, where their metrics.json would overwrite real results
     # and could end up in the report tables.
@@ -314,6 +347,7 @@ def main(argv=None) -> int:
 
     # metrics.json goes next to preds.csv; make_tables.py collects all of them later.
     out = a.preds.parent / "metrics.json"
+    # indent=2 + trailing newline: readable and gives clean git diffs when results are re-run.
     out.write_text(json.dumps(metrics, indent=2) + "\n")
     lo, hi = metrics["auroc_ci95"]
     print(f"{method}/{setting}: AUROC {_fmt(metrics['auroc'])} [{_fmt(lo)}, {_fmt(hi)}]  "
@@ -328,4 +362,6 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
+    # sys.exit passes main()'s return code to the shell; an exception exits non-zero, so a Kaggle
+    # notebook or script that chains eval calls stops on a bad preds.csv.
     sys.exit(main())

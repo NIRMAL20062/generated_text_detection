@@ -61,6 +61,7 @@ PARAPHRASE_SETTINGS = ["paraphrase_orig", "paraphrase", "paraphrase_human"]  # n
 # setting -> setting whose train part trains its model. Settings not listed train on their own train part.
 TRAIN_SOURCE = {s: "indist" for s in PARAPHRASE_SETTINGS}
 N_TOP = 30
+# 30 per side is enough to see patterns in the report table; more mostly adds near-duplicate char n-grams.
 
 # TF-IDF hyperparameters (recorded in run_info.json)
 # TF-IDF in plain words: each text becomes a long vector with one number per word (or character n-gram).
@@ -69,6 +70,17 @@ N_TOP = 30
 # repeated 20 times does not count 20x. min_df drops n-grams seen in too few texts (mostly typos and noise).
 # Word 1-2-grams catch vocabulary ("additionally", "in conclusion"); char 3-5-grams catch spelling,
 # punctuation and word pieces, which also work on words never seen in training.
+# Why these numbers (viva):
+# - ngram_range (1, 2) for words: bigrams add phrases ("in conclusion") that single words miss; trigrams would
+#   multiply the vocabulary for little gain. (3, 5) for chars: shorter than 3 is mostly letters (no signal),
+#   longer than 5 approaches whole words, which the word vectoriser already covers.
+# - min_df 2 / 3: an n-gram seen in only one text cannot generalise, it just lets the model memorise that text.
+#   Char n-grams are far more numerous, so their cut-off is a bit higher.
+# - max_features caps memory: the matrix has one column per kept n-gram; without a cap char 3-5-grams reach
+#   millions of columns. Tradeoff: rare but useful n-grams beyond the cap are lost.
+# - lowercase=True: "The" and "the" become one feature. Cost: we lose capitalisation habits as a signal
+#   (char n-grams still see punctuation and spacing).
+# - float32 halves memory vs the default float64; the precision loss does not change the LR's ranking.
 WORD = dict(analyzer="word", ngram_range=(1, 2), min_df=2, max_features=200_000, sublinear_tf=True,
             lowercase=True, dtype=np.float32)
 CHAR = dict(analyzer="char", ngram_range=(3, 5), min_df=3, max_features=300_000, sublinear_tf=True,
@@ -87,6 +99,8 @@ class TfidfLR:
         weights (simpler model), large C = weaker penalty. fit() may replace it with the best C found on val.
         """
         self.C, self.max_chars = C, max_chars
+        # Two separate vectorisers (not one) because each has its own vocabulary and settings; their outputs are
+        # glued side by side in fit(), so the LR sees one long feature vector per text.
         self.word, self.char = TfidfVectorizer(**WORD), TfidfVectorizer(**CHAR)
 
     def _cut(self, texts: pd.Series) -> pd.Series:
@@ -95,6 +109,9 @@ class TfidfLR:
         Why: char n-grams over very long texts need a lot of RAM; cutting lets the baseline run on a small laptop.
         The same cut is applied at fit and at score time, so train and test see texts the same way.
         """
+        # Tradeoff: cutting loses whatever is only at the end of a long text (e.g. a conclusion), so with
+        # max_chars > 0 the score can be slightly lower. If train were cut but test not, the test vectors would
+        # contain n-grams and lengths the model never saw, a train/test mismatch; hence one helper for both.
         return texts.str.slice(0, self.max_chars) if self.max_chars else texts
 
     def _lr(self, C: float) -> LogisticRegression:
@@ -104,6 +121,10 @@ class TfidfLR:
         human texts, so without it the model could lean towards always saying "machine". liblinear is a solver
         that works well on large sparse matrices like ours, and random_state=SEED keeps runs reproducible.
         """
+        # max_iter=1000: the default (100) can stop before convergence on hundreds of thousands of features and
+        # print a warning; a higher cap costs nothing when it converges early.
+        # Why logistic regression and not e.g. an SVM: it outputs a probability (we need a score where higher =
+        # more AI) and its weights are directly readable (top_features). An SVM gives a margin, not a probability.
         return LogisticRegression(C=C, class_weight="balanced", solver="liblinear", max_iter=1000, random_state=SEED)
 
     def fit(self, texts: pd.Series, y: np.ndarray, val_texts: pd.Series | None = None,
@@ -111,10 +132,17 @@ class TfidfLR:
         """Vectorise once. With val data and several Cs, keep the C with the best val AUROC (never test)."""
         t = self._cut(texts)
         # Vectorisers are fitted on TRAIN texts only; the word and char columns are placed side by side.
+        # If we fitted the vectorisers on train+test, IDF would include test statistics (data leakage), and the test
+        # score would be optimistically biased. sp.hstack keeps the matrix sparse: a dense version would need
+        # rows x ~500k floats, far more RAM than we have. csr format is what liblinear trains fastest on.
         X = sp.hstack([self.word.fit_transform(t), self.char.fit_transform(t)], format="csr")
         self.val_auroc = {}
         # Pick C on VAL by AUROC (needs both classes in val). Test is never looked at, so the test score stays honest.
         # The vectorising above is done once and reused for every C, which is the expensive part.
+        # Why AUROC and not accuracy to pick C: AUROC does not depend on a threshold, so it measures ranking
+        # quality only; the threshold is chosen later by src.eval. AUROC is undefined with one class, hence the
+        # len(set(val_y)) == 2 check. Choosing C on test instead would make the reported test number a best case
+        # (we would be tuning on the exam). C grid 0.25..16 (x4 steps) spans weak-to-strong regularisation cheaply.
         if Cs and len(Cs) > 1 and val_texts is not None and len(set(val_y)) == 2:
             Xv = self._X(val_texts)
             best = None
@@ -123,6 +151,7 @@ class TfidfLR:
                 auc = float(roc_auc_score(val_y, lr.predict_proba(Xv)[:, 1]))
                 self.val_auroc[str(C)] = round(auc, 5)
                 print(f"    C={C}: val AUROC {auc:.4f}", flush=True)
+                # Strict '>' keeps the first (smallest, most regularised) C on ties: the simpler model wins.
                 if best is None or auc > best[0]:
                     best = (auc, C, lr)
             _, self.C, self.lr = best
@@ -141,6 +170,8 @@ class TfidfLR:
 
     def score(self, texts: pd.Series) -> np.ndarray:
         """P(machine) for each text, between 0 and 1. Higher = more likely AI, as preds.csv requires."""
+        # predict_proba returns one column per class in the order of lr.classes_ = [0, 1]; label 1 = machine,
+        # so column 1 is P(machine). Taking column 0 would flip every score and AUROC would become 1 - AUROC.
         return self.lr.predict_proba(self._X(texts))[:, 1]          # P(machine): higher = more AI
 
     def params(self) -> dict:
@@ -156,12 +187,18 @@ class TfidfLR:
         the strongest "human" features are page leftovers such as "references" and "_url_0_" (see the report's
         Limitations). Example row: direction=ai, rank=1, feature="word:additionally", coef > 0.
         """
+        # The feature order in the matrix is [all word columns, then all char columns] (that is how fit() stacked
+        # them), so the names must be concatenated in the same order or every weight gets the wrong label.
+        # The prefixes tell apart a word "the" and the char 3-gram "the".
         names = np.concatenate([["word:" + w for w in self.word.get_feature_names_out()],
                                 ["char:" + c for c in self.char.get_feature_names_out()]])
         coef = self.lr.coef_[0]
         # In logistic regression, P(machine) grows with the weighted sum of features: a positive weight pushes a
         # text towards "machine", a negative one towards "human". Sorting the weights gives both ends.
         order = np.argsort(coef)
+        # argsort is ascending: the first n are the most negative (human), the reversed first n the most positive (AI).
+        # Caveat: weights are only comparable because TF-IDF puts features on similar scales; with raw counts a large
+        # weight could just mean a rare feature.
         ai, human = order[::-1][:n], order[:n]
         return pd.DataFrame({
             "direction": ["ai"] * n + ["human"] * n,
@@ -174,6 +211,8 @@ class TfidfLR:
 class LengthLR:
     """Length-only shortcut check: log(1 + chars), log(1 + words) -> balanced logistic regression."""
 
+    # Reading the result: if this 2-feature model gets a high AUROC, the dataset lets you tell human from AI just
+    # by length, so a high score from a big model may be partly that shortcut, not "understanding" style.
     def __init__(self):
         """Scale the two features to mean 0 / std 1, then a balanced logistic regression.
 
@@ -188,6 +227,7 @@ class LengthLR:
 
         The log stops a few very long texts from dominating: 1,000 vs 2,000 chars matters as much as 10,000 vs 20,000.
         """
+        # log1p(x) = log(1 + x) so an empty text (0 chars) gives 0 instead of log(0) = -infinity, which would crash LR.
         return np.log1p(np.column_stack([texts.str.len(), texts.str.split().str.len()]).astype(float))
 
     def fit(self, texts: pd.Series, y: np.ndarray, *_, **__) -> "LengthLR":
@@ -232,6 +272,8 @@ def _git_commit() -> str | None:
 
     Why: run_info.json must record which version of the code produced a result (AGENTS.md hard rules).
     """
+    # Returns None instead of crashing: on Kaggle the code may be a copy without .git, and a missing hash must
+    # not throw away an hour of training.
     try:
         return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
                                        stderr=subprocess.DEVNULL).strip()
@@ -259,6 +301,9 @@ def run_setting(setting: str, method: str, texts: pd.DataFrame, out_root: Path, 
     split = load_split(setting, dev=dev)
     # paraphrase* settings have no train part: they reuse the indist model, so the same detector is compared
     # before and after paraphrasing. The cache keeps that model so it is trained only once.
+    # .get(setting, setting): settings not in TRAIN_SOURCE map to themselves, i.e. train on their own train part.
+    # Why reuse matters: if paraphrase got a freshly trained model, a drop in score could come from a different
+    # model instead of from paraphrasing. Same model before and after isolates the effect of the attack.
     train_setting = TRAIN_SOURCE.get(setting, setting)
     if train_setting in cache:
         model, n_train, train_secs = cache[train_setting]
@@ -270,6 +315,8 @@ def run_setting(setting: str, method: str, texts: pd.DataFrame, out_root: Path, 
         tr = texts.loc[train_ids]
         print(f"[{method}/{setting}] training on {train_setting} train: {len(tr)} texts", flush=True)
         t_fit = time.time()
+        # Val comes from the TRAINING setting's split: e.g. logo_dolly tunes C on val texts that also exclude dolly,
+        # so the unseen generator stays truly unseen until test.
         val_ids = load_split(train_setting, dev=dev)["val"]
         va = texts.loc[val_ids]
         model = make_model(method, C[0], max_chars).fit(tr["text"], tr["label"].to_numpy(),
@@ -278,7 +325,10 @@ def run_setting(setting: str, method: str, texts: pd.DataFrame, out_root: Path, 
         cache[train_setting] = (model, n_train, train_secs)
 
     # Score val AND test: src.eval picks the decision threshold on val, then reports metrics on test.
+    # Without val rows src.eval could not pick a threshold, and picking it on test would leak test labels.
+    # Train rows are not scored: their scores would be over-confident (the model has seen them).
     ids = split["val"] + split["test"]
+    # Fail loudly rather than silently dropping rows: a quietly smaller test set would change the metrics.
     missing = [i for i in ids if i not in texts.index]
     if missing:
         raise KeyError(f"{setting}: {len(missing)} ids have no text, e.g. {missing[:3]} "
@@ -331,11 +381,14 @@ def main(argv=None) -> int:
     texts = load_texts(dev=a.dev).set_index("id")
 
     # Train the indist model first when paraphrase* settings will reuse it.
+    # Sort key is a tuple of booleans (False sorts before True): indist first, then the normal settings,
+    # paraphrase* last, so by the time a paraphrase setting runs the indist model is already in the cache.
     settings = sorted(settings, key=lambda s: (s != "indist", s in PARAPHRASE_SETTINGS))
     cache: dict = {}
     for s in settings:
         run_setting(s, a.method, texts, out_root, a.dev, a.C, a.max_chars, cache)
         if s not in TRAIN_SOURCE.values():
+            # Each TF-IDF model holds ~500k-column vectorisers; keeping all 12 would exhaust the 6.6 GB laptop.
             cache.pop(s, None)                 # only the indist model is reused; free the rest
     print(f"done. Next: python -m src.eval {out_root.relative_to(ROOT) if out_root.is_relative_to(ROOT) else out_root}"
           f"/{a.method}/<setting>/preds.csv{' --dev' if a.dev else ''}")
