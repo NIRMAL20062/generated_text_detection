@@ -28,10 +28,12 @@ class FakeLM:
     Logits depend only on the current token, so padding can never change a real position's score."""
 
     def __call__(self, input_ids, attention_mask):
+        """Return an object with .logits looked up from TABLE; if wrong, token_stats would be fed the wrong fake model output in every test."""
         return type("Out", (), {"logits": TABLE[input_ids]})()
 
 
 def _batch(seqs, pad=0):
+    """Pad token-id lists into (ids, mask) like score_texts does; if wrong, every test feeds token_stats a malformed batch."""
     longest = max(len(s) for s in seqs)
     ids = torch.full((len(seqs), longest), pad, dtype=torch.long)
     mask = torch.zeros((len(seqs), longest), dtype=torch.long)
@@ -42,6 +44,7 @@ def _batch(seqs, pad=0):
 
 
 def _log_softmax(x):
+    """Plain-numpy log-softmax; if wrong, the hand-computed expected values are wrong and tests pass or fail for no real reason."""
     x = np.asarray(x, dtype=float)
     return x - np.log(np.exp(x).sum())
 
@@ -65,6 +68,7 @@ def _reference(seq, method):
 
 @pytest.mark.parametrize("method", ["ppl", "logrank", "fastdetectgpt"])
 def test_scores_match_hand_computation(method):
+    """If this fails, token_stats gives a different ppl, log-rank or Fast-DetectGPT number than the formula, so every score in results/ would be wrong."""
     seq = [0, 1, 2, 3]
     ids, mask = _batch([seq])
     got = token_stats(FakeLM(), ids, mask, method)[0]
@@ -72,6 +76,7 @@ def test_scores_match_hand_computation(method):
 
 
 def test_logrank_hand_example():
+    """If this fails, ranks are counted wrongly (off by one, or ties penalised), so every log-rank score and its AUROC would shift."""
     # After BOS (logits 2,1,0,-1) the actual token 1 is the LM's 2nd choice -> rank 2.
     # After token 1 (uniform) the actual token 3 ties with everything -> rank 1 (ties don't count against it).
     ids, mask = _batch([[0, 1, 3]])
@@ -79,12 +84,14 @@ def test_logrank_hand_example():
 
 
 def test_ppl_of_uniform_prediction_is_minus_log_vocab():
+    """If this fails, ppl is no longer the mean log-probability (a uniform guess over 4 tokens must give -log 4), so the ppl method's scores would be meaningless."""
     ids, mask = _batch([[1, 3]])    # token 1's row is uniform over 4 tokens
     assert token_stats(FakeLM(), ids, mask, "ppl")[0] == pytest.approx(-np.log(4), abs=1e-6)
 
 
 @pytest.mark.parametrize("method", ["ppl", "logrank", "fastdetectgpt"])
 def test_padding_does_not_change_a_score(method):
+    """If this fails, a text's score would depend on which longer texts share its batch, so results would change with batch size and sorting."""
     short, long = [0, 2, 1], [0, 1, 2, 3, 1, 2]
     alone = token_stats(FakeLM(), *_batch([short]), method)[0]
     padded = token_stats(FakeLM(), *_batch([short, long]), method)[0]   # `short` now carries 3 pad tokens
@@ -92,6 +99,7 @@ def test_padding_does_not_change_a_score(method):
 
 
 def test_more_ai_like_text_scores_higher():
+    """If this fails, the sign of a score is flipped for some method, and the real run would rank humans as more AI (AUROC below 0.5)."""
     # Token 1 is the top choice after BOS and token 0 after token 2 (high probability): "AI-like".
     # The reverse picks the LM's least likely tokens: "human-like". Higher score = more AI for all three methods.
     ai, human = [0, 0, 0], [0, 3, 2]
