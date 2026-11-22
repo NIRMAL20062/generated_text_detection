@@ -1,8 +1,7 @@
 # Report draft: Dataset, Setup and Baselines (role A)
 
-> Draft for issues #8 and #15. Numbers marked `__` are blanks: fill them from `results/<method>/<setting>/metrics.json`
-> (or `results/tables.md`, made by `python -m src.make_tables`) after the full Kaggle run. Never report a number
-> that is not in those files. All dataset numbers below come from `results/data_audit.md`.
+> Draft for issues #8 and #15. Result numbers are read from `results/<method>/<setting>/metrics.json`
+> (`results/tables.md`). All dataset numbers come from `results/data_audit.md`.
 
 ## 1. Dataset
 
@@ -78,19 +77,22 @@ text length rather than style.
 
 | Setting | `tfidf_lr` AUROC [95 % CI] | `length` AUROC |
 |---|---|---|
-| in-distribution | __ [__, __] | __ |
-| LOGO mean | __ | __ |
-| cross-domain mean | __ | __ |
-| paraphrase_orig → paraphrase | __ → __ | __ → __ |
+| in-distribution | 0.990 [0.987, 0.992] | 0.591 |
+| LOGO mean | 0.928 | 0.582 |
+| cross-domain mean | 0.877 | 0.605 |
+| paraphrase_orig → paraphrase | 0.991 → 0.994 | 0.589 → 0.613 |
 
-**What to write once the numbers are in (check each claim against the tables first):**
+**Findings** (the full text is in `report/report.tex`):
 
-- How far `tfidf_lr` drops from in-distribution to LOGO and cross-domain, and which held-out generator or domain is
-  hardest.
-- Where `length` is clearly above 0.5. On the dev sample it was about 0.55 in-distribution but about 0.79 for
-  `logo_bloomz` and `xdomain_reddit`, a sign of a length shortcut there. Confirm this on the full data before
-  claiming it.
-- The top features: whether they look like style (e.g. "additionally", "overall") or topic or formatting artifacts.
+- TF-IDF + LR is near-perfect in distribution (0.990) and drops on unseen generators (mean 0.928; held-out BLOOMZ
+  0.814) and unseen domains (mean 0.877; held-out arXiv 0.825).
+- The length-only model is near chance in distribution (0.591) but reaches 0.764 with BLOOMZ held out and 0.768 and
+  0.744 on held-out Reddit and wikiHow: a length shortcut in those settings.
+- The paraphrase attack does not lower TF-IDF (0.991 → 0.994), but paraphrased *human* texts are scored as more
+  machine-like (`paraphrase_human` 0.964): the model reacts to the paraphraser's style.
+- The strongest "human" features are formatting remnants of the M4 sources (`references`, `external links`,
+  `_url_0_`, `. ,`), so in-distribution scores are likely optimistic. The selected C was 16, the top of the grid, in
+  every setting.
 
 ## 5. Limitations (state these plainly in the report)
 
