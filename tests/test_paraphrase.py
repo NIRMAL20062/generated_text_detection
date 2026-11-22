@@ -7,7 +7,7 @@ No model download and no data needed. The full path is checked by `python -m src
 import pandas as pd
 import pytest
 
-from src.paraphrase import bleu, build_splits, make_rows, split_sentences
+from src.paraphrase import bleu, build_splits, chunk_long, make_rows, split_sentences
 
 
 def test_split_sentences_basic_and_whitespace_collapsed():
@@ -71,3 +71,10 @@ def test_build_splits_human_control_keeps_machine_originals_and_swaps_some_human
     assert human["test"] == sorted(["m1", "m2", "h1", "h3", "h2_para"])
     assert len(human["test"]) == len(orig["test"])                          # same size as paraphrase_orig
     assert human["val"] == ["v1"]
+
+
+def test_chunk_long_splits_only_long_sentences_and_keeps_every_word():
+    long = " ".join(f"w{i}" for i in range(130))
+    out = chunk_long(["short one.", long], max_words=60)
+    assert out[0] == "short one." and [len(c.split()) for c in out[1:]] == [60, 60, 10]
+    assert " ".join(out) == "short one. " + long

@@ -1,5 +1,7 @@
 # Team 20: Who Codes What
 
+> **Status 22 Nov:** [x] = code merged or in PR #23. All 84 results (6 methods × 14 settings) are committed in `results/`; tables in `results/tables.md`; report in `report/report.tex`.
+
 > Proposed assignment. Swap roles freely, but **edit this file when you do** so it stays the source of truth.
 > Big picture: [ROADMAP.md](ROADMAP.md). Step-by-step git + Kaggle commands: [CONTRIBUTING.md](../CONTRIBUTING.md).
 > Final deadline: **Sat 22 Nov, 11:59 pm IST**.
@@ -146,7 +148,7 @@ otherwise `null`). **Nobody writes their own metric code.**
 Everyone depends on you first, so **do the bootstrap commit today, ship a dev sample by 8 Nov**, and the full data by 9 Nov.
 
 **Code**
-- [ ] `src/data.py`
+- [x] `src/data.py`
   - `download_m4(out_dir)`: fetch only the English JSONL files (disk is tight)
   - `audit(raw_dir)`: **do this first.** Print and save `results/data_audit.md`: rows per (domain, generator), any missing cells, extra generators (e.g. GPT-4, which we exclude), **how many human texts appear in more than one generator file**, and (after splitting) the **class ratio per split**. Share it in the group chat; it decides the final grid.
   - `build_dataset(max_per_cell=1000) -> DataFrame`: flatten human/machine pairs into the §0.1 schema, add the `group` hash, dedupe human texts, drop empty or very short texts (<50 chars), and subsample per (domain, generator)
@@ -155,11 +157,11 @@ Everyone depends on you first, so **do the bootstrap commit today, ship a dev sa
   - `make_dev_sample()`: write `data/sample_dev.parquet` (~500 rows, all domains and generators)
   - CLI: `python -m src.data --all`, plus `python -m src.data --check-splits`, which asserts that every id in
     `splits/*.json` exists in `load_texts()`. Every Kaggle notebook runs it first (see CONTRIBUTING.md §4).
-- [ ] Upload `data/processed/` as the Kaggle Dataset `team20-m4-processed` and share it with B, C and D (§0.4)
-- [ ] `src/eval.py`: reads preds.csv + `load_texts()`, picks the threshold on val (max F1), reports test metrics → `metrics.json`: AUROC + bootstrap 95% CI (1,000 resamples), accuracy, macro-F1, TPR@1%FPR (only if ≥1,000 test humans). If val has fewer than 50 rows of either class, the threshold metrics (accuracy, F1) are `null` and only AUROC is reported. Include a `--by domain|generator` breakdown.
-- [ ] `src/baseline_tfidf.py`: word 1–2-grams + char 3–5-grams, `LogisticRegression(class_weight='balanced')`, run on **every** setting, write preds.csv + run_info.json. Also save the top 30 "AI" and top 30 "human" features (good report material).
+- [x] Upload `data/processed/` as the Kaggle Dataset `team20-m4-processed` and share it with B, C and D (§0.4)
+- [x] `src/eval.py`: reads preds.csv + `load_texts()`, picks the threshold on val (max F1), reports test metrics → `metrics.json`: AUROC + bootstrap 95% CI (1,000 resamples), accuracy, macro-F1, TPR@1%FPR (only if ≥1,000 test humans). If val has fewer than 50 rows of either class, the threshold metrics (accuracy, F1) are `null` and only AUROC is reported. Include a `--by domain|generator` breakdown.
+- [x] `src/baseline_tfidf.py`: word 1–2-grams + char 3–5-grams, `LogisticRegression(class_weight='balanced')`, run on **every** setting, write preds.csv + run_info.json. Also save the top 30 "AI" and top 30 "human" features (good report material).
   - Same script, `--method length`: logistic regression on text length only (characters + words). This is the shortcut sanity check.
-- [ ] `requirements.txt`, `.gitignore`, README "how to reproduce" section
+- [x] `requirements.txt`, `.gitignore`, README "how to reproduce" section
 
 **Deadlines**
 | By | Deliverable |
@@ -177,13 +179,13 @@ Everyone depends on you first, so **do the bootstrap commit today, ship a dev sa
 ## B: RoBERTa · VIVEK342004
 
 **Code**
-- [ ] `src/train_roberta.py --setting <name> [--dev]`
+- [x] `src/train_roberta.py --setting <name> [--dev]`
   - `roberta-base`, max_len 256, batch 16, lr 2e-5, 2 epochs (1 if time is short), fp16
   - **class-weighted cross-entropy** (weights from the train split's class ratio)
   - early stopping or best checkpoint chosen on val AUROC
   - write `results/roberta/<setting>/preds.csv` (val + test, score = softmax P(machine)) + `run_info.json`
   - `--predict-only --model <path>`: score a setting with an already-trained model (for the `paraphrase*` settings)
-- [ ] `notebooks/kaggle_roberta.ipynb`: attach the Kaggle Dataset, `git clone`, `pip install -r requirements.txt`, then a loop over settings calling the script. **No logic inside the notebook.**
+- [x] `notebooks/kaggle_roberta.ipynb`: attach the Kaggle Dataset, `git clone`, `pip install -r requirements.txt`, then a loop over settings calling the script. **No logic inside the notebook.**
 - [ ] Save model weights to Kaggle output / Google Drive only (not git). **Keep the `indist` model for your own `paraphrase*` runs.**
 
 **Run order (11 training runs + 3 prediction-only runs; stop early if GPU quota runs out)**
@@ -202,7 +204,7 @@ Zero-shot methods don't train, so **score each text once**, cache the scores, th
 setting by selecting the ids from that setting's split file.
 
 **Code**
-- [ ] `src/zeroshot.py --method ppl|logrank|detectgpt [--dev]`
+- [x] `src/zeroshot.py --method ppl|logrank|fastdetectgpt [--dev]` (perturbation DetectGPT was not built; Fast-DetectGPT is the fallback below, stated as a limitation in the report)
   - scorer LM: `gpt2-medium` (fall back to `gpt2` if it's slow), truncate texts to 256 tokens
   - `ppl`: mean token log-likelihood (score = log-lik, because higher log-lik means more AI-like)
   - `logrank`: mean log-rank of the actual tokens (score = −logrank)
@@ -210,7 +212,7 @@ setting by selecting the ids from that setting's split file.
     n=20 perturbations; score = (logp(x) − mean logp(x̃)) / std (the normalised version)
   - cache scores to `results/zeroshot_cache/<method>.parquet` (`id, score`) so a Kaggle timeout doesn't lose progress (skip ids that are already cached)
   - then write `results/<method>/<setting>/preds.csv` + `run_info.json` for every setting
-- [ ] `notebooks/kaggle_zeroshot.ipynb`: same rule as B, so the notebook only calls the scripts
+- [x] `notebooks/kaggle_zeroshot.ipynb`: same rule as B, so the notebook only calls the scripts
 - [ ] **What to score:**
   - `ppl`, `logrank`: every text in `load_texts()` (cheap)
   - `detectgpt`: only the ids in `splits/detectgpt_subset.json` (1,500 texts, already covering `paraphrase_orig`
@@ -219,7 +221,7 @@ setting by selecting the ids from that setting's split file.
     split (roughly 100 machine texts per held-out generator). **For DetectGPT, report AUROC (with CI) as the
     headline metric**; threshold metrics are `null` where the val overlap is too small (see `eval.py`).
     Record the time per text (reporting the compute cost is itself a result).
-- [ ] Fallback: if DetectGPT can't finish by 14 Nov, implement `--method fastdetectgpt` (Fast-DetectGPT, one forward pass) instead.
+- [x] Fallback: if DetectGPT can't finish by 14 Nov, implement `--method fastdetectgpt` (Fast-DetectGPT, one forward pass) instead.
 
 **Deadlines**
 | By | Deliverable |
@@ -235,7 +237,7 @@ setting by selecting the ids from that setting's split file.
 ## D: Attack & Results · kumar-vishal01
 
 **Code**
-- [ ] `src/paraphrase.py [--dev]`
+- [x] `src/paraphrase.py [--dev]`
   - paraphrase the **500 machine texts in the `paraphrase_orig` test set** (A picks them, so the "before" and
     "after" use exactly the same texts)
   - model: start with `humarin/chatgpt_paraphraser_on_T5_base`; try DIPPER only if GPU memory allows.
@@ -246,7 +248,7 @@ setting by selecting the ids from that setting's split file.
   - sanity check: report BLEU or BERTScore vs the original, so we can show the meaning was kept
   - *optional control:* paraphrase ~200 of those **human** texts too (label stays 0) → `splits/paraphrase_human.json`.
     If detectors flag these as AI, they're detecting "paraphraser style" rather than "LLM-written".
-- [ ] `src/make_tables.py`: reads every `results/*/*/metrics.json` →
+- [x] `src/make_tables.py`: reads every `results/*/*/metrics.json` →
   - Table 1: in-dist AUROC per method (± CI)
   - Table 2: LOGO AUROC (method × held-out generator) + average
   - Table 3: cross-domain AUROC (method × held-out domain)

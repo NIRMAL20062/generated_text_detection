@@ -29,6 +29,7 @@ RAW_DIR = ROOT / "data" / "raw"
 PROC_DIR = ROOT / "data" / "processed"
 DATASET_PATH = PROC_DIR / "m4_en.parquet"
 PARAPHRASED_PATH = PROC_DIR / "paraphrased.parquet"
+PARAPHRASED_FALLBACK = ROOT / "outputs" / "paraphrase" / "paraphrased.parquet"  # src.paraphrase default output
 DEV_PATH = ROOT / "data" / "sample_dev.parquet"
 SPLITS_DIR = ROOT / "splits"
 DEV_SPLITS_DIR = SPLITS_DIR / "dev"
@@ -65,8 +66,11 @@ def load_texts(dev: bool = False) -> pd.DataFrame:
     if dev:
         return pd.read_parquet(DEV_PATH)
     parts = [pd.read_parquet(DATASET_PATH)]
-    if PARAPHRASED_PATH.exists():
-        parts.append(pd.read_parquet(PARAPHRASED_PATH))
+    # paraphrase.py writes outputs/paraphrase/ (data/processed is read-only on Kaggle) but its split files go to
+    # splits/ at once, so read it from there too; otherwise every paraphrase* setting fails on missing ids.
+    para = next((p for p in (PARAPHRASED_PATH, PARAPHRASED_FALLBACK) if p.exists()), None)
+    if para is not None:
+        parts.append(pd.read_parquet(para))
     return pd.concat(parts, ignore_index=True)
 
 

@@ -1,0 +1,78 @@
+{
+  "method": "fastdetectgpt",
+  "setting": "paraphrase",
+  "dev": false,
+  "coverage": {
+    "val": 0.1315,
+    "test": 1.0
+  },
+  "auroc": 0.743264,
+  "auroc_ci95": [
+    0.7144999458286247,
+    0.7729509444771977
+  ],
+  "threshold": 2.2173614501953125,
+  "accuracy": 0.697,
+  "macro_f1": 0.6891411781241568,
+  "tpr_at_1pct_fpr": null,
+  "n_test": 1000,
+  "n_test_human": 500,
+  "n_test_machine": 500,
+  "n_val": 500,
+  "n_val_human": 250,
+  "n_val_machine": 250,
+  "by_domain": {
+    "arxiv": {
+      "auroc": 0.7002999999999999,
+      "n_machine": 100,
+      "n_human": 100
+    },
+    "peerread": {
+      "auroc": 0.8219000000000002,
+      "n_machine": 100,
+      "n_human": 100
+    },
+    "reddit": {
+      "auroc": 0.7997000000000001,
+      "n_machine": 100,
+      "n_human": 100
+    },
+    "wikihow": {
+      "auroc": 0.5978000000000001,
+      "n_machine": 100,
+      "n_human": 100
+    },
+    "wikipedia": {
+      "auroc": 0.7942,
+      "n_machine": 100,
+      "n_human": 100
+    }
+  },
+  "by_generator": {
+    "bloomz": {
+      "auroc": 0.4690196078431373,
+      "n_machine": 100,
+      "n_human": 204
+    },
+    "chatGPT": {
+      "auroc": 0.8996999999999999,
+      "n_machine": 100,
+      "n_human": 200
+    },
+    "cohere": {
+      "auroc": 0.8495169082125603,
+      "n_machine": 100,
+      "n_human": 207
+    },
+    "davinci": {
+      "auroc": 0.7599004975124379,
+      "n_machine": 100,
+      "n_human": 201
+    },
+    "dolly": {
+      "auroc": 0.7596276595744681,
+      "n_machine": 100,
+      "n_human": 188
+    }
+  }
+}

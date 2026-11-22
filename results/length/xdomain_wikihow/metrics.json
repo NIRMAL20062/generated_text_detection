@@ -1,0 +1,58 @@
+{
+  "method": "length",
+  "setting": "xdomain_wikihow",
+  "dev": false,
+  "coverage": {
+    "val": 1.0,
+    "test": 1.0
+  },
+  "auroc": 0.7438208301306687,
+  "auroc_ci95": [
+    0.733781801047904,
+    0.7548980833107036
+  ],
+  "threshold": 0.442778,
+  "accuracy": 0.5680084188371481,
+  "macro_f1": 0.5678023355081107,
+  "tpr_at_1pct_fpr": 0.1348,
+  "n_test": 7602,
+  "n_test_human": 2602,
+  "n_test_machine": 5000,
+  "n_val": 3079,
+  "n_val_human": 1079,
+  "n_val_machine": 2000,
+  "by_domain": {
+    "wikihow": {
+      "auroc": 0.7438208301306687,
+      "n_machine": 5000,
+      "n_human": 2602
+    }
+  },
+  "by_generator": {
+    "bloomz": {
+      "auroc": 0.9703210000000001,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "chatGPT": {
+      "auroc": 0.5428135000000001,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "cohere": {
+      "auroc": 0.7804195,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "davinci": {
+      "auroc": 0.6329745,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "dolly": {
+      "auroc": 0.7800130000000001,
+      "n_machine": 1000,
+      "n_human": 1000
+    }
+  }
+}

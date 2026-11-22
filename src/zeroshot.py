@@ -3,7 +3,7 @@
     python -m src.zeroshot --method ppl|logrank|fastdetectgpt [--dev] [--full]
 
 Zero-shot methods don't train, so every text is scored ONCE, the scores are cached in
-``results/zeroshot_cache/<method>.parquet`` (``id, score``), and then one ``preds.csv`` per setting is written by
+``results/zeroshot_cache/<method>__<model>__<max_tokens>.parquet`` (``id, score``), and then one ``preds.csv`` per setting is written by
 selecting that setting's val/test ids from the cache (see docs/TASKS.md §0.3 and §C).
 
 Score convention: higher = more likely AI.
@@ -34,6 +34,7 @@ METHODS = ("ppl", "logrank", "fastdetectgpt")
 PARAPHRASE_SETTINGS = ("paraphrase_orig", "paraphrase", "paraphrase_human")
 RESULTS_DIR = ROOT / "results"
 CACHE_DIR = RESULTS_DIR / "zeroshot_cache"
+DEV_CACHE_DIR = ROOT / "results_dev" / "zeroshot_cache"
 NOT_SETTINGS = {"detectgpt_subset"}  # split-dir json files that are not evaluation settings
 
 
@@ -210,7 +211,9 @@ def main(argv=None) -> int:
     df = df[df["id"].isin(needed)]
     print(f"{args.method}: {len(df)} texts, {len(settings)} settings, model={model_name}, device={device}", flush=True)
 
-    cache_path = CACHE_DIR / f"{args.method}{'_dev' if args.dev else ''}.parquet"
+    # the cache key includes the scorer settings: a rerun with another model/max_tokens must not reuse old scores
+    cache_name = f"{args.method}__{model_name.replace('/', '--')}__{max_tokens}.parquet"
+    cache_path = (DEV_CACHE_DIR if args.dev else CACHE_DIR) / cache_name
     tok, model = load_lm(model_name, device)
     info = score_texts(df, args.method, tok, model, device, max_tokens, batch_size, cache_path)
     print(f"scored {info['n_scored']} new texts ({info['n_cached']} from cache) in {info['seconds']:.0f}s", flush=True)

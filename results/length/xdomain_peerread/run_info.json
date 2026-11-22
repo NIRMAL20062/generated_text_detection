@@ -1,0 +1,31 @@
+{
+  "method": "length",
+  "setting": "xdomain_peerread",
+  "trained_on": "xdomain_peerread[train]",
+  "dev": false,
+  "git_commit": "d0cf1eb3a804b8a3322a19669c7afec00eaf6aa7",
+  "seed": 42,
+  "hyperparameters": {
+    "features": [
+      "log1p(chars)",
+      "log1p(words)"
+    ],
+    "class_weight": "balanced",
+    "coef": [
+      -1.4554,
+      0.8445
+    ],
+    "intercept": 0.04839848082328423
+  },
+  "n_train": 27648,
+  "n_val": 3077,
+  "n_test": 7516,
+  "train_seconds": 1.3,
+  "runtime_seconds": 1.9,
+  "hardware": "CPU: x86_64 x4 (Linux-6.18.55+-x86_64-with-glibc2.39)",
+  "versions": {
+    "python": "3.13.18",
+    "sklearn": "1.6.1",
+    "pandas": "2.3.3"
+  }
+}

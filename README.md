@@ -33,9 +33,67 @@ uv venv --python 3.11 && source .venv/bin/activate
 uv pip install -r requirements.txt   # plus torch if you run models locally
 ```
 
+## Results
+
+Test AUROC (higher is better, 0.5 = chance) on M4 English, from `results/*/*/metrics.json`. Full tables with 95% CIs,
+accuracy, macro-F1 and TPR@1%FPR: [results/tables.md](results/tables.md); figures: [results/figures/](results/figures/);
+report: [report/report.tex](report/report.tex).
+
+| Detector | In-distribution | Unseen generator (mean) | Unseen domain (mean) | Paraphrase: before → after |
+|---|---|---|---|---|
+| Length only (shortcut check) | 0.591 | 0.582 | 0.605 | 0.589 → 0.613 |
+| TF-IDF + LR | 0.990 | 0.928 | 0.877 | 0.991 → 0.994 |
+| Log-likelihood (GPT-2 medium) | 0.845 | 0.860 | 0.874 | 0.846 → 0.683 |
+| Log-rank | 0.857 | 0.870 | 0.885 | 0.860 → 0.699 |
+| Fast-DetectGPT* | 0.789 | 0.797 | 0.798 | 0.789 → 0.743 |
+| RoBERTa (fine-tuned) | 0.991 | 0.951 | 0.903 | 0.990 → 0.984 |
+
+\*Fast-DetectGPT scores a 1,500-text subset (plus the paraphrase test sets), so its intervals are wider.
+
+- Supervised detectors win everywhere, but RoBERTa's lead over zero-shot log-rank shrinks from 0.13 in distribution to
+  0.02 on unseen domains. BLOOMZ is the hardest held-out generator for every detector.
+- Paraphrasing lowers the likelihood-based scores by ~0.16 AUROC but not the supervised ones, which instead flag
+  paraphrased *human* text as machine (`paraphrase_human` control).
+- Caveats: a length shortcut exists for held-out BLOOMZ, Reddit and wikiHow, and M4 human texts contain formatting
+  remnants (`references`, `_url_0_`) that TF-IDF uses (`results/tfidf_lr/indist/top_features.csv`).
+
+![AUROC by setting](results/figures/fig1_auroc_by_setting.png)
+
 ## How to reproduce
 
-_To be filled in as the scripts land (data → baselines → RoBERTa → zero-shot → paraphrase → tables)._
+Every script has `--dev`, which runs on the committed `data/sample_dev.parquet` in under 2 minutes on CPU and
+writes to `results_dev/`. Full runs need the data (step 1) and, for the model steps, a GPU (we used Kaggle T4).
+On Kaggle, attach the `team20-m4-processed` dataset and run `notebooks/kaggle_all.ipynb`, which does steps 3–6.
+
+```bash
+# 1. Data: download M4, build data/processed/m4_en.parquet, splits/*.json and results/data_audit.md
+python -m src.data --all
+python -m src.data --check-splits          # every split id exists, no group crosses train/val/test
+
+# 2. Baselines (CPU, ~1-2 h for all settings)
+python -m src.baseline_tfidf --method length
+python -m src.baseline_tfidf --method tfidf_lr
+
+# 3. Paraphrase attack (GPU): outputs/paraphrase/paraphrased.parquet + splits/paraphrase*.json
+python -m src.paraphrase
+
+# 4. Zero-shot detectors (GPU)
+python -m src.zeroshot --method ppl
+python -m src.zeroshot --method logrank
+python -m src.zeroshot --method fastdetectgpt
+
+# 5. RoBERTa (GPU): indist first, its model is reused for the paraphrase settings
+python -m src.train_roberta --setting indist
+python -m src.train_roberta --setting paraphrase --predict-only --model outputs/roberta/indist/model
+python -m src.train_roberta --setting logo_chatGPT --no-save     # ... every logo_* and xdomain_*
+
+# 6. Metrics for every run, then the report tables and figures
+for f in results/*/*/preds.csv; do python -m src.eval "$f"; done
+python -m src.make_tables                  # results/tables.md + results/figures/
+
+# tests
+python -m pytest tests/ -q
+```
 
 ## References
 

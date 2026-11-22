@@ -1,0 +1,58 @@
+{
+  "method": "fastdetectgpt",
+  "setting": "logo_chatGPT",
+  "dev": false,
+  "coverage": {
+    "val": 0.0388,
+    "test": 0.0444
+  },
+  "auroc": 0.9818060200668897,
+  "auroc_ci95": [
+    0.969436765655405,
+    0.9917715451436212
+  ],
+  "threshold": null,
+  "accuracy": null,
+  "macro_f1": null,
+  "tpr_at_1pct_fpr": null,
+  "n_test": 449,
+  "n_test_human": 299,
+  "n_test_machine": 150,
+  "n_val": 82,
+  "n_val_human": 45,
+  "n_val_machine": 37,
+  "by_domain": {
+    "arxiv": {
+      "auroc": 0.9905472636815921,
+      "n_machine": 30,
+      "n_human": 67
+    },
+    "peerread": {
+      "auroc": 0.9976190476190476,
+      "n_machine": 30,
+      "n_human": 56
+    },
+    "reddit": {
+      "auroc": 0.9944444444444445,
+      "n_machine": 30,
+      "n_human": 60
+    },
+    "wikihow": {
+      "auroc": 0.9477011494252874,
+      "n_machine": 30,
+      "n_human": 58
+    },
+    "wikipedia": {
+      "auroc": 0.9856321839080461,
+      "n_machine": 30,
+      "n_human": 58
+    }
+  },
+  "by_generator": {
+    "chatGPT": {
+      "auroc": 0.9818060200668897,
+      "n_machine": 150,
+      "n_human": 299
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "model": "humarin/chatgpt_paraphraser_on_T5_base",
+  "seed": 42,
+  "git_commit": "953d0bbd9c63ebbedbf39759815586c7a09d3228",
+  "dev": false,
+  "device": "cuda",
+  "sampling": {
+    "top_p": 0.9,
+    "temperature": 0.8,
+    "no_repeat_ngram_size": 3
+  },
+  "n_machine": 500,
+  "n_human_paraphrased": 200,
+  "bleu_machine": 26.74,
+  "bleu_human": 23.95,
+  "unchanged_share": 0.0,
+  "mean_length_ratio": 0.972,
+  "runtime_seconds": 399.9
+}

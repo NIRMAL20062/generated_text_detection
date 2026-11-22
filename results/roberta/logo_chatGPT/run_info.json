@@ -1,0 +1,27 @@
+{
+  "method": "roberta",
+  "setting": "logo_chatGPT",
+  "git_commit": "953d0bbd9c63ebbedbf39759815586c7a09d3228",
+  "seed": 42,
+  "dev": false,
+  "predict_only": false,
+  "model": "roberta-base",
+  "max_len": 256,
+  "batch_size": 16,
+  "lr": 2e-05,
+  "epochs": 1,
+  "fp16": true,
+  "class_weights": [
+    1.3047645125958378,
+    0.8106498809118748
+  ],
+  "n_train": 19060,
+  "n_val": 2116,
+  "n_test": 10123,
+  "best_val_auroc": 0.9868599170437407,
+  "train_seconds": 288.0,
+  "steps": 1192,
+  "seconds_per_text_inference": 0.00344,
+  "hardware": "Tesla T4",
+  "total_runtime_seconds": 351.1
+}

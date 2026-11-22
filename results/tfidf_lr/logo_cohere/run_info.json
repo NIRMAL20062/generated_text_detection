@@ -1,0 +1,56 @@
+{
+  "method": "tfidf_lr",
+  "setting": "logo_cohere",
+  "trained_on": "logo_cohere[train]",
+  "dev": false,
+  "git_commit": "d0cf1eb3a804b8a3322a19669c7afec00eaf6aa7",
+  "seed": 42,
+  "hyperparameters": {
+    "C": 16.0,
+    "val_auroc_by_C": {
+      "0.25": 0.97173,
+      "1.0": 0.9812,
+      "4.0": 0.98523,
+      "16.0": 0.98657
+    },
+    "max_chars": 0,
+    "solver": "liblinear",
+    "class_weight": "balanced",
+    "word": {
+      "analyzer": "word",
+      "ngram_range": [
+        1,
+        2
+      ],
+      "min_df": 2,
+      "max_features": 200000,
+      "sublinear_tf": true,
+      "lowercase": true,
+      "dtype": "float32"
+    },
+    "char": {
+      "analyzer": "char",
+      "ngram_range": [
+        3,
+        5
+      ],
+      "min_df": 3,
+      "max_features": 300000,
+      "sublinear_tf": true,
+      "lowercase": true,
+      "dtype": "float32"
+    },
+    "n_features": 500000
+  },
+  "n_train": 19043,
+  "n_val": 2077,
+  "n_test": 10119,
+  "train_seconds": 265.7,
+  "runtime_seconds": 349.1,
+  "hardware": "CPU: x86_64 x4 (Linux-6.18.55+-x86_64-with-glibc2.39)",
+  "versions": {
+    "python": "3.13.18",
+    "sklearn": "1.6.1",
+    "pandas": "2.3.3"
+  }
+}

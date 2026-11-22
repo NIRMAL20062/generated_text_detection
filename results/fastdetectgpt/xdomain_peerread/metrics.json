@@ -1,0 +1,58 @@
+{
+  "method": "fastdetectgpt",
+  "setting": "xdomain_peerread",
+  "dev": false,
+  "coverage": {
+    "val": 0.105,
+    "test": 0.0399
+  },
+  "auroc": 0.8257333333333333,
+  "auroc_ci95": [
+    0.7665913785880416,
+    0.8785782025094836
+  ],
+  "threshold": 1.848139762878418,
+  "accuracy": 0.7766666666666666,
+  "macro_f1": 0.7763660031820558,
+  "tpr_at_1pct_fpr": null,
+  "n_test": 300,
+  "n_test_human": 150,
+  "n_test_machine": 150,
+  "n_val": 323,
+  "n_val_human": 165,
+  "n_val_machine": 158,
+  "by_domain": {
+    "peerread": {
+      "auroc": 0.8257333333333333,
+      "n_machine": 150,
+      "n_human": 150
+    }
+  },
+  "by_generator": {
+    "bloomz": {
+      "auroc": 0.28583333333333333,
+      "n_machine": 30,
+      "n_human": 80
+    },
+    "chatGPT": {
+      "auroc": 0.9976190476190476,
+      "n_machine": 30,
+      "n_human": 56
+    },
+    "cohere": {
+      "auroc": 0.8961904761904762,
+      "n_machine": 30,
+      "n_human": 70
+    },
+    "davinci": {
+      "auroc": 0.9976851851851851,
+      "n_machine": 30,
+      "n_human": 72
+    },
+    "dolly": {
+      "auroc": 0.9507936507936509,
+      "n_machine": 30,
+      "n_human": 63
+    }
+  }
+}

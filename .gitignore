@@ -30,3 +30,6 @@ venv/
 .vscode/
 .idea/
 .DS_Store
+colab/
+notebooks/m4_detection_pipeline.ipynb
+results_dev/

@@ -16,7 +16,7 @@ Why these choices (docs/TASKS.md §B):
   - best checkpoint on val AUROC: with 1 epoch, val is checked several times during the epoch and the best
     weights are kept (val is never the test set).
   - fp16 only on a GPU (autocast); CPU runs in fp32.
---dev: tiny stratified subsets, max_len 32, finishes in about 2 minutes on CPU. Dev outputs go to results_dev/.
+--dev: tiny stratified train subset (val/test whole), max_len 32, finishes in about 2 minutes on CPU. Dev outputs go to results_dev/.
 """
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ from src.data import ROOT, SEED, load_split, load_texts
 RESULTS_DIR = ROOT / "results"
 DEV_RESULTS_DIR = ROOT / "results_dev"   # src.eval --dev refuses predictions inside results/
 MODEL_ROOT = ROOT / "outputs" / "roberta"  # gitignored: weights never go to git
-DEV_CAPS = {"train": 32, "val": 24, "test": 24}  # rows per split in --dev
+DEV_CAPS = {"train": 32}  # rows per split in --dev; val/test stay whole (src.eval needs 100% test coverage)
 DEV_MAX_LEN = 32
 NO_TRAIN_PREFIX = "paraphrase"  # these settings have an empty train split: use --predict-only
 
