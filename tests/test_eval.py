@@ -22,6 +22,7 @@ from src.data import load_split, load_texts
 # ---------------------------------------------------------------- 1. known answers
 
 def test_auroc_known_values():
+    """If this fails, AUROC itself is computed wrongly (perfect, reversed or tied detectors give the wrong value)."""
     y = np.array([0, 0, 1, 1])
     assert ev.auroc(y, np.array([0.1, 0.2, 0.8, 0.9])) == 1.0      # machines always score higher
     assert ev.auroc(y, np.array([0.9, 0.8, 0.2, 0.1])) == 0.0      # perfectly reversed
@@ -30,12 +31,14 @@ def test_auroc_known_values():
 
 
 def test_random_scores_give_auroc_near_half():
+    """If this fails, AUROC is biased: random scores should give about 0.5."""
     rng = np.random.default_rng(0)
     y = rng.integers(0, 2, 5000)
     assert abs(ev.auroc(y, rng.random(5000)) - 0.5) < 0.03
 
 
 def test_bootstrap_ci_contains_estimate_and_is_reproducible():
+    """If this fails, the 95% CI is not reproducible with SEED or does not surround the AUROC."""
     rng = np.random.default_rng(1)
     y = rng.integers(0, 2, 500)
     s = y + rng.normal(0, 1, 500)                 # a noisy but useful detector
@@ -46,12 +49,14 @@ def test_bootstrap_ci_contains_estimate_and_is_reproducible():
 
 def test_best_threshold_hand_worked_example():
     # Worked out by hand in the best_threshold docstring: the best cut is t = 0.8 (macro-F1 0.80).
+    """If this fails, the val threshold no longer maximises macro-F1, so accuracy/F1 in the tables are off."""
     y = np.array([1, 1, 0, 1, 0])
     s = np.array([0.9, 0.8, 0.6, 0.4, 0.1])
     assert ev.best_threshold(y, s) == 0.8
 
 
 def test_best_threshold_never_splits_tied_scores():
+    """If this fails, the threshold can fall between equal scores, which no real cut can do."""
     y = np.array([1, 0, 1, 0])
     s = np.array([0.7, 0.7, 0.7, 0.2])
     t = ev.best_threshold(y, s)
@@ -62,6 +67,7 @@ def test_best_threshold_never_splits_tied_scores():
 def test_tpr_at_1pct_fpr():
     # 100 humans scored 0.00 .. 0.99; 5 machines far above them, 5 far below.
     # At <= 1% FPR we may flag at most 1 human, so we catch exactly the 5 high machines: TPR = 0.5.
+    """If this fails, TPR@1%FPR flags more than 1% of humans or counts caught machines wrongly."""
     y = np.array([0] * 100 + [1] * 10)
     s = np.concatenate([np.arange(100) / 100, [2.0] * 5, [-1.0] * 5])
     assert ev.tpr_at_fpr(y, s) == 0.5
@@ -79,6 +85,7 @@ def _toy_texts():
 
 
 def test_breakdown_by_generator_uses_groups_not_the_human_generator_field():
+    """If this fails, per-generator AUROC compares a generator against the wrong human texts."""
     texts = _toy_texts()
     test = texts.assign(score=[0.1, 0.9, 0.8, 0.2, 0.7], split="test")
     out = ev.breakdown(test, "generator", texts)
@@ -97,6 +104,7 @@ def test_breakdown_by_generator_uses_groups_not_the_human_generator_field():
     ("id,score\nh1,0.1\n", "missing columns"),
 ])
 def test_load_preds_rejects_bad_files(tmp_path, rows, message):
+    """If this fails, a broken preds.csv (bad columns, splits, scores or ids) is scored instead of rejected."""
     path = tmp_path / "preds.csv"
     path.write_text(rows)
     with pytest.raises(ValueError, match=message):
@@ -121,6 +129,7 @@ def _write_dev_preds(tmp_path, setting, score_fn):
 
 
 def test_cli_on_dev_sample_perfect_detector(tmp_path):
+    """If this fails, the real command does not run end to end or a perfect detector does not get AUROC 1.0."""
     path = _write_dev_preds(tmp_path, "indist", lambda df: df["label"].to_numpy())
     assert ev.main([str(path), "--dev", "--by", "domain"]) == 0
     m = json.loads((path.parent / "metrics.json").read_text())
@@ -132,6 +141,7 @@ def test_cli_on_dev_sample_perfect_detector(tmp_path):
 
 def test_cli_rejects_ids_from_the_wrong_split(tmp_path):
     # Predictions made for indist, but saved under logo_dolly: must be caught.
+    """If this fails, predictions saved under the wrong setting folder (possible train leakage) go unnoticed."""
     path = _write_dev_preds(tmp_path, "indist", lambda df: df["label"].to_numpy())
     wrong = tmp_path / "fake_method" / "logo_dolly"
     wrong.mkdir()
@@ -144,6 +154,7 @@ def test_cli_rejects_ids_from_the_wrong_split(tmp_path):
 
 def test_group_bootstrap_is_wider_when_rows_in_a_group_are_related():
     # 200 groups of 5 identical rows: really only 200 independent samples, not 1,000.
+    """If this fails, the CI resamples rows instead of groups and is too narrow."""
     rng = np.random.default_rng(2)
     y = np.repeat(rng.integers(0, 2, 200), 5)
     s = y + np.repeat(rng.normal(0, 1, 200), 5)
@@ -154,6 +165,7 @@ def test_group_bootstrap_is_wider_when_rows_in_a_group_are_related():
 
 
 def test_misspelled_setting_folder_is_an_error(tmp_path):
+    """If this fails, a typo in the setting folder name writes metrics no table will ever pick up."""
     path = _write_dev_preds(tmp_path, "indist", lambda df: df["label"].to_numpy())
     typo = tmp_path / "fake_method" / "indsit"
     typo.mkdir()
@@ -164,6 +176,7 @@ def test_misspelled_setting_folder_is_an_error(tmp_path):
 
 @pytest.mark.parametrize("method, should_fail", [("roberta", True), ("detectgpt", False)])
 def test_partial_test_set_only_allowed_for_detectgpt(tmp_path, method, should_fail):
+    """If this fails, a method could skip test texts unnoticed, or Fast-DetectGPT's subset would be rejected."""
     path = _write_dev_preds(tmp_path, "logo_dolly", lambda df: df["label"].to_numpy())
     preds = pd.read_csv(path)
     test_rows = preds.index[preds["split"] == "test"]
@@ -178,6 +191,7 @@ def test_partial_test_set_only_allowed_for_detectgpt(tmp_path, method, should_fa
 
 
 def test_dev_run_refuses_to_write_into_results(tmp_path):
+    """If this fails, src.eval --dev could overwrite a real metrics.json in results/."""
     path = ev.ROOT / "results" / "fake_method" / "indist" / "preds.csv"   # never created: check fires first
     with pytest.raises(ValueError, match="must not be inside results/"):
         ev.main([str(path), "--dev"])
@@ -186,6 +200,7 @@ def test_dev_run_refuses_to_write_into_results(tmp_path):
 def test_evaluate_threshold_metrics_when_val_is_big_enough():
     # The dev sample has < 50 val texts per class, so build a synthetic set that reaches the
     # accuracy / macro-F1 branch. Machine scores ~ N(1, 1), human scores ~ N(0, 1).
+    """If this fails, accuracy and macro-F1 are not computed (or are wrong) when val is large enough."""
     rng = np.random.default_rng(3)
     n = 400
     label = rng.integers(0, 2, n)

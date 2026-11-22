@@ -14,6 +14,7 @@ from src.data import load_split
 
 @pytest.mark.parametrize("method", bl.METHODS)
 def test_dev_run_writes_files_the_evaluator_accepts(tmp_path, method):
+    """If this fails, a baseline run writes preds.csv/run_info.json that break the contract or that src.eval rejects."""
     assert bl.main(["--dev", "--method", method, "--setting", "indist", "logo_dolly", "paraphrase_orig",
                     "--out-dir", str(tmp_path)]) == 0
     for setting in ("indist", "logo_dolly", "paraphrase_orig"):
@@ -31,6 +32,7 @@ def test_dev_run_writes_files_the_evaluator_accepts(tmp_path, method):
 
 
 def test_paraphrase_settings_reuse_the_indist_model(tmp_path):
+    """If this fails, paraphrase_orig is scored by a different model than indist, so the attack comparison is unfair."""
     bl.main(["--dev", "--setting", "paraphrase_orig", "indist", "--out-dir", str(tmp_path)])
     info = json.loads((tmp_path / "tfidf_lr" / "paraphrase_orig" / "run_info.json").read_text())
     assert info["trained_on"] == "indist[train]"
@@ -42,6 +44,7 @@ def test_paraphrase_settings_reuse_the_indist_model(tmp_path):
 
 
 def test_top_features_has_30_each_way(tmp_path):
+    """If this fails, top_features.csv (used in the report's Discussion) has the wrong rows or signs."""
     bl.main(["--dev", "--setting", "indist", "--out-dir", str(tmp_path)])
     top = pd.read_csv(tmp_path / "tfidf_lr" / "indist" / "top_features.csv")
     assert (top["direction"].value_counts() == 30).all()
@@ -49,11 +52,13 @@ def test_top_features_has_30_each_way(tmp_path):
 
 
 def test_dev_output_refuses_results_dir():
+    """If this fails, a --dev run could overwrite real results in results/."""
     with pytest.raises(ValueError, match="must not go inside results/"):
         bl.main(["--dev", "--out-dir", str(bl.ROOT / "results")])
 
 
 def test_C_is_picked_on_val_and_recorded(tmp_path):
+    """If this fails, C is not chosen by best val AUROC or is not recorded in run_info.json."""
     bl.main(["--dev", "--setting", "indist", "--C", "0.1", "10", "--out-dir", str(tmp_path)])
     hp = json.loads((tmp_path / "tfidf_lr" / "indist" / "run_info.json").read_text())["hyperparameters"]
     assert set(hp["val_auroc_by_C"]) == {"0.1", "10.0"}
