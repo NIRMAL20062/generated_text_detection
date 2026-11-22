@@ -1,6 +1,6 @@
 # Team 20: Who Codes What
 
-> **Status 22 Nov:** [x] = code merged or in PR #23. No setting has results committed yet; full runs are on Kaggle (`p20-baselines-full` CPU, `p20-gpu-all` GPU).
+> **Status 22 Nov:** [x] = code merged or in PR #23. All 84 results (6 methods × 14 settings) are committed in `results/`; tables in `results/tables.md`; report in `report/report.tex`.
 
 > Proposed assignment. Swap roles freely, but **edit this file when you do** so it stays the source of truth.
 > Big picture: [ROADMAP.md](ROADMAP.md). Step-by-step git + Kaggle commands: [CONTRIBUTING.md](../CONTRIBUTING.md).
