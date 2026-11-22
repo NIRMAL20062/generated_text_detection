@@ -38,7 +38,7 @@ or machine text written for the same prompt, appears in both training and test, 
 shared evaluator (AUROC with group-bootstrap 95\% confidence intervals, accuracy and macro-F1 at a validation-chosen
 threshold, and TPR at 1\% FPR). Fine-tuned RoBERTa and TF-IDF + LR are near-perfect in distribution (AUROC 0.991 and 0.990) and remain the strongest
 detectors on unseen generators (mean 0.951 and 0.928), but the gap to zero-shot log-rank shrinks from 0.13 in
-distribution to 0.02 on unseen domains. BLOOMZ is the hardest held-out generator for every method. A T5 paraphrase
+distribution to 0.02 on unseen domains. BLOOMZ is the hardest held-out generator for every detector. A T5 paraphrase
 attack lowers the zero-shot scores by about 0.16 AUROC but barely affects the supervised detectors, which instead
 flag paraphrased \emph{human} text as machine-written. We also find formatting artifacts in the M4 human texts that
 supervised detectors exploit.
@@ -259,11 +259,11 @@ stays roughly level across settings (log-rank: 0.857, 0.870, 0.885). As a result
 log-rank falls from 0.134 in distribution to 0.081 on unseen generators and 0.018 on unseen domains, and log-rank is
 better than RoBERTa on held-out Wikipedia (0.877 vs 0.845) and PeerRead (0.955 vs 0.935).
 
-\paragraph{BLOOMZ is the hardest unseen generator.} Every method scores lowest when BLOOMZ is held out
+\paragraph{BLOOMZ is the hardest unseen generator.} Every detector (not the length check) scores lowest when BLOOMZ is held out
 (Table~\ref{tab:logo}); RoBERTa reaches 0.881 but only 23\% TPR at 1\% FPR. Fast-DetectGPT falls below chance there
 (0.406): it ranks BLOOMZ texts as \emph{more} human than human texts. This rests on 150 machine texts and is not
 shared by the other likelihood scores (log-likelihood 0.744, log-rank 0.794), so we report it as an observation;
-we did not investigate the cause. ChatGPT is the easiest held-out generator for all methods (0.964--0.998).
+we did not investigate the cause. ChatGPT is the easiest held-out generator for every detector (0.964--0.998); for the length check it is the reverse.
 
 \paragraph{Length is a shortcut in some settings.} The length-only model is close to chance in distribution (0.591)
 but reaches 0.764 with BLOOMZ held out and 0.768 and 0.744 on held-out Reddit and wikiHow, so in those settings
@@ -314,7 +314,7 @@ consequence.
 \section{Conclusion}
 
 On M4 English, fine-tuned RoBERTa is the most accurate detector in every setting, but its lead over a zero-shot
-log-rank score nearly vanishes on unseen domains, and BLOOMZ remains hard for every method when it is not seen in
+log-rank score nearly vanishes on unseen domains, and BLOOMZ remains hard for every detector when it is not seen in
 training. A sentence-level paraphrase attack mainly hurts likelihood-based detectors, while supervised detectors
 appear robust partly because they flag the paraphraser's style rather than machine authorship. Formatting artifacts
 in the human texts mean that in-distribution scores of supervised detectors on M4 should be read as optimistic.
