@@ -290,7 +290,7 @@ against the originals, no text unchanged) while keeping the length (ratio 0.97).
 \paragraph{What the TF-IDF model uses.} The strongest machine features in distribution are words such as
 \texttt{additionally}, \texttt{this article}, \texttt{examines} and \texttt{such as}. The strongest human features,
 however, are formatting remnants (\texttt{references}, \texttt{external links}, \texttt{\_url\_0\_}, and the
-pattern ``\texttt{. ,}'' left by removed citations), which are not about who wrote the text. Section~\ref{sec:limits} discusses the
+pattern ``\texttt{. ,}'' left where wikiHow step titles were removed), which are not about who wrote the text. Section~\ref{sec:limits} discusses the
 consequence.
 
 \section{Limitations}\label{sec:limits}
@@ -308,7 +308,10 @@ consequence.
   \item \emph{Formatting artifacts in M4 human texts.} The strongest ``human'' TF-IDF features in \texttt{indist}
         are leftovers of the source pages, not writing style: \texttt{references}, \texttt{external links}
         (Wikipedia section titles), \texttt{\_url\_0\_} (Reddit link placeholders) and the punctuation pattern
-        ``\texttt{. ,}'' left where citations were removed (\texttt{results/tfidf\_lr/indist/top\_features.csv}).
+        ``\texttt{. ,}'' left where wikiHow step titles were removed (\texttt{results/tfidf\_lr/indist/top\_features.csv}).
+        These leftovers are common in human texts and almost absent from machine texts: 51\% of human texts contain
+        at least one of them against 2\% of machine texts (Wikipedia 97\% vs 4\%, wikiHow 99.8\% vs 3\%, Reddit 46\%
+        vs 0.6\%; \texttt{results/artifacts.md}).
         Supervised detectors can partly exploit these, so their in-distribution scores are likely optimistic. We
         found this after the runs and did not have time to clean the data and rerun.
   \item For TF-IDF + LR, the selected $C$ was the largest value in the grid ($C=16$) in every setting, so a larger
