@@ -30,7 +30,7 @@ Every line of the brief must end up as code, results and a report section. This 
 | M4 dataset | `src/data.py`: English M4, 5 domains × 5 generators, 1,000 machine texts per cell | `results/data_audit.md` | A |
 | TF-IDF + LR baseline | `src/baseline_tfidf.py` (+ `--method length` sanity check) | `results/tfidf_lr/`, `results/length/` | A |
 | Fine-tuned RoBERTa detector | `src/train_roberta.py` (Kaggle GPU) | `results/roberta/` | B |
-| Zero-shot perplexity / DetectGPT-style scoring | `src/zeroshot.py --method ppl\|logrank\|detectgpt` | `results/ppl/`, `results/logrank/`, `results/detectgpt/` | C |
+| Zero-shot perplexity / DetectGPT-style scoring | `src/zeroshot.py --method ppl\|logrank\|fastdetectgpt` (Fast-DetectGPT, the one-pass analytic form of DetectGPT's probability curvature; perturbation DetectGPT was not run, see report limitations) | `results/ppl/`, `results/logrank/`, `results/fastdetectgpt/` | C |
 | Leave-one-generator-out | `splits/logo_<gen>.json` ×5 | Table 2 (method × held-out generator) | A builds splits; A, B, C run |
 | Cross-generator robustness | same as LOGO | Table 2 + LOGO heatmap | all |
 | Cross-domain robustness | `splits/xdomain_<dom>.json` ×5 | Table 3 (method × held-out domain) | A builds splits; A, B, C run |
@@ -47,7 +47,7 @@ These are our choices, not instructor requirements. Cut them first if time runs 
 - **Length-only baseline**: detects whether the data has a length shortcut.
 - **Group-aware splits**: the same human text appears in several M4 files. Without these splits it would leak
   from train into test and inflate the scores.
-- **Fast-DetectGPT**: a fallback, used only if DetectGPT is too slow.
+- **Fast-DetectGPT**: used instead of perturbation DetectGPT (20 T5 rewrites per text did not fit the compute budget). It scores only the 1,500-id DetectGPT subset plus the paraphrase test sets.
 - **Human-paraphrase control** (optional): checks whether the detectors flag "paraphraser style" rather than
   "LLM-written" text.
 - **English only, 1,000 machine texts per cell**: keeps the work within our compute budget (no local GPU,

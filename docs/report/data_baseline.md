@@ -92,7 +92,20 @@ text length rather than style.
   claiming it.
 - The top features: whether they look like style (e.g. "additionally", "overall") or topic or formatting artifacts.
 
-## 5. Reproducibility
+## 5. Limitations (state these plainly in the report)
+
+- **DetectGPT.** We ran Fast-DetectGPT (Bao et al., ICLR 2024), the one-forward-pass analytic form of DetectGPT's
+  probability curvature, instead of perturbation DetectGPT (reference [1]), which needs about 20 T5 rewrites and
+  21 scorer passes per text. The brief asks for "DetectGPT-style scoring", which this satisfies, but the numbers
+  are not those of the original method. Fast-DetectGPT scores only the 1,500-id subset plus the paraphrase test
+  sets, so its LOGO and cross-domain numbers rest on fewer texts (wider CIs).
+- **Scorer model.** The zero-shot scorer is GPT-2 medium, truncated to 256 tokens. None of the M4 generators is
+  GPT-2, so the zero-shot methods are black-box here.
+- **Scope.** English only, at most 1,000 machine texts per cell, one paraphraser (T5), one seed. Every setting
+  that could not be run in the compute budget must appear in the tables as "not run (compute)", never as a blank.
+- **RoBERTa** is trained for 1 epoch with max length 256, so long texts are truncated.
+
+## 6. Reproducibility
 
 Every run writes `run_info.json` with the git commit, seed (42), hyperparameters, hardware, runtime and library
 versions. The exact commands are in the README ("How to reproduce").
