@@ -35,7 +35,39 @@ uv pip install -r requirements.txt   # plus torch if you run models locally
 
 ## How to reproduce
 
-_To be filled in as the scripts land (data → baselines → RoBERTa → zero-shot → paraphrase → tables)._
+Every script has `--dev`, which runs on the committed `data/sample_dev.parquet` in under 2 minutes on CPU and
+writes to `results_dev/`. Full runs need the data (step 1) and, for the model steps, a GPU (we used Kaggle T4).
+On Kaggle, attach the `team20-m4-processed` dataset and run `notebooks/kaggle_all.ipynb`, which does steps 3–6.
+
+```bash
+# 1. Data: download M4, build data/processed/m4_en.parquet, splits/*.json and results/data_audit.md
+python -m src.data --all
+python -m src.data --check-splits          # every split id exists, no group crosses train/val/test
+
+# 2. Baselines (CPU, ~1-2 h for all settings)
+python -m src.baseline_tfidf --method length
+python -m src.baseline_tfidf --method tfidf_lr
+
+# 3. Paraphrase attack (GPU): outputs/paraphrase/paraphrased.parquet + splits/paraphrase*.json
+python -m src.paraphrase
+
+# 4. Zero-shot detectors (GPU)
+python -m src.zeroshot --method ppl
+python -m src.zeroshot --method logrank
+python -m src.zeroshot --method fastdetectgpt
+
+# 5. RoBERTa (GPU): indist first, its model is reused for the paraphrase settings
+python -m src.train_roberta --setting indist
+python -m src.train_roberta --setting paraphrase --predict-only --model outputs/roberta/indist/model
+python -m src.train_roberta --setting logo_chatGPT --no-save     # ... every logo_* and xdomain_*
+
+# 6. Metrics for every run, then the report tables and figures
+for f in results/*/*/preds.csv; do python -m src.eval "$f"; done
+python -m src.make_tables                  # results/tables.md + results/figures/
+
+# tests
+python -m pytest tests/ -q
+```
 
 ## References
 
