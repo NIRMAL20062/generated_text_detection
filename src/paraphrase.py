@@ -45,6 +45,7 @@ QUALITY_PATH = ROOT / "results" / "paraphrase_quality.json"
 DEV_QUALITY_PATH = ROOT / "results_dev" / "paraphrase_quality.json"
 DEV_MAX_MACHINE, DEV_MAX_HUMAN = 6, 4  # texts per class in --dev
 DEV_MAX_SENTENCES = 40                 # --dev: paraphrase only the first sentences of each text
+MAX_CHUNK_WORDS = 60                   # ~90 T5 tokens: well under --max-input-tokens 128, so nothing is truncated
 
 
 # ---------------------------------------------------------------- pure helpers (unit-tested)
@@ -121,6 +122,16 @@ def make_rows(originals: pd.DataFrame, new_texts: list[str], suffix: str = "_par
     return df[COLUMNS + ["orig_id"]]
 
 
+def chunk_long(sentences: list[str], max_words: int = MAX_CHUNK_WORDS) -> list[str]:
+    """Cut any sentence longer than max_words into word chunks (reddit/wikihow often have no full stops), so the
+    paraphraser's input truncation never silently drops the end of a text. Joining the output gives the input."""
+    out: list[str] = []
+    for s in sentences:
+        w = s.split()
+        out += [" ".join(w[i:i + max_words]) for i in range(0, len(w), max_words)] or [s]
+    return out
+
+
 # ---------------------------------------------------------------- model
 
 def paraphrase_sentences(sentences: list[str], device: str, batch_size: int, args) -> list[str]:
@@ -149,7 +160,7 @@ def paraphrase_sentences(sentences: list[str], device: str, batch_size: int, arg
 
 def paraphrase_texts(texts: list[str], device: str, batch_size: int, args) -> list[str]:
     """Paraphrase whole texts sentence by sentence and join the pieces back in order."""
-    per_text = [split_sentences(t) for t in texts]
+    per_text = [chunk_long(split_sentences(t)) for t in texts]
     if args.dev:
         per_text = [s[:DEV_MAX_SENTENCES] for s in per_text]
     flat = [s for sents in per_text for s in sents]
