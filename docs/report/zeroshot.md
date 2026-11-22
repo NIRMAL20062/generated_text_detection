@@ -1,6 +1,6 @@
 # Report draft: Zero-shot methods (role C)
 
-> Draft for issue #15. Numbers marked `__` are blanks: fill them from `results/<method>/<setting>/metrics.json`
+> Draft for issue #15. All numbers below are read from `results/<method>/<setting>/metrics.json`
 > and `run_info.json` after the Kaggle run. Do not report a number that is not in those files.
 
 ## 1. Zero-shot detection: the idea
@@ -46,11 +46,9 @@ Then:
 
 Read it as: "how much more likely are the actual tokens than the tokens the model itself would have picked,
 measured in standard deviations?" This needs a single forward pass, which is why it is far cheaper. We use the
-same model (GPT-2 medium) as both sampler and scorer, whereas the original paper pairs two different models.
+same model (GPT-2 medium) as both sampler and scorer, which is also the main (white-box) setting of the Fast-DetectGPT paper; the paper's black-box variant uses a separate sampling model.
 
-Our implementation is checked against a plain-numpy reference in `tests/test_zeroshot.py`. We also compared the
-analytic expectation and variance once against a Monte-Carlo estimate (20,000 samples per position) and they agreed
-closely; that one-off check is not part of the test suite.
+Our implementation is checked against a plain-numpy reference in `tests/test_zeroshot.py`.
 
 ## 3. What was scored
 
@@ -66,11 +64,11 @@ closely; that one-off check is not part of the test suite.
 
 | Setting | ppl AUROC | logrank AUROC | Fast-DetectGPT AUROC |
 |---|---|---|---|
-| `indist` | __ | __ | __ |
-| `paraphrase_orig` | __ | __ | __ |
-| `paraphrase` | __ | __ | __ |
-| LOGO (mean of 5) | __ | __ | __ |
-| cross-domain (mean of 5) | __ | __ | __ |
+| `indist` | 0.845 [0.833, 0.856] | 0.857 [0.846, 0.868] | 0.789 [0.761, 0.819] |
+| `paraphrase_orig` | 0.846 [0.822, 0.870] | 0.860 [0.836, 0.882] | 0.789 [0.761, 0.819] |
+| `paraphrase` | 0.683 [0.648, 0.717] | 0.699 [0.665, 0.732] | 0.743 [0.714, 0.773] |
+| LOGO (mean of 5) | 0.860 | 0.870 | 0.797 |
+| cross-domain (mean of 5) | 0.874 | 0.885 | 0.798 |
 
 Observations to write once the numbers exist (delete any that the numbers do not support):
 - Which method generalises best to an unseen generator, and which generator is hardest?
@@ -84,9 +82,9 @@ Take these from `run_info.json` (`seconds_per_text`, `hardware`, `total_runtime_
 
 | Method | Forward passes per text | Seconds per text | Hardware | Texts scored |
 |---|---|---|---|---|
-| `ppl` | 1 | __ | __ | __ |
-| `logrank` | 1 | __ | __ | __ |
-| `fastdetectgpt` | 1 (plus the extra softmax work) | __ | __ | __ |
+| `ppl` | 1 | 0.0154 | Tesla T4 | 38,941 |
+| `logrank` | 1 | 0.0158 | Tesla T4 | 38,941 |
+| `fastdetectgpt` | 1 (plus the extra softmax work) | 0.0188 | Tesla T4 | 2,200 |
 | full DetectGPT (not run) | 21 for N = 20 rewrites, plus a T5 pass per rewrite | not measured | n/a | n/a |
 
 State plainly that full DetectGPT was not run, and why: it needs about N times the compute of `ppl` plus T5
@@ -97,7 +95,7 @@ plan allows. Do not quote a measured cost for full DetectGPT.
 
 - One scorer model (GPT-2 medium) for everything. A stronger scorer could change the ranking of methods.
 - Texts are truncated to 256 tokens, so long arXiv and PeerRead texts are judged on their opening part only.
-- `fastdetectgpt` uses the same model as sampler and scorer, unlike the original paper.
+- `fastdetectgpt` uses one model as sampler and scorer (the paper's white-box setting); a stronger or different sampling model could change its numbers.
 - Subset evaluation gives wider confidence intervals than the full-set `ppl` and `logrank` numbers; do not compare
   the AUROC values across methods without looking at the CIs.
 
