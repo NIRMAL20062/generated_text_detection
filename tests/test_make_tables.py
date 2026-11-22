@@ -5,6 +5,7 @@ from src import make_tables as mt
 
 
 def _write(root, method, setting, auroc):
+    """Create a fake results/<method>/<setting>/metrics.json, so the tables can be tested without running any detector."""
     d = root / method / setting
     d.mkdir(parents=True)
     (d / "metrics.json").write_text(json.dumps({"auroc": auroc, "auroc_ci95": [auroc - .02, auroc + .02],
@@ -12,6 +13,8 @@ def _write(root, method, setting, auroc):
 
 
 def test_tables_fill_present_cells_and_dash_missing(tmp_path):
+    """If this fails, the Markdown tables would show wrong numbers, a wrong paraphrase drop, a LOGO mean over an
+    incomplete row, or methods in the wrong order."""
     _write(tmp_path, "tfidf_lr", "indist", .95)
     _write(tmp_path, "tfidf_lr", "logo_chatGPT", .80)
     _write(tmp_path, "tfidf_lr", "paraphrase_orig", .90)
