@@ -173,7 +173,7 @@ Tables~\ref{tab:indist}--\ref{tab:para} report test-set results; every number is
 scored on a subset (Section~\ref{sec:methods}), so its test sets are smaller (1,000 texts in distribution, 289--311 human and 150
 machine texts per LOGO setting, 300 per cross-domain setting) and its intervals are wider; with fewer than 50
 validation texts per class, its LOGO accuracy and F1 are not reported. Figure~\ref{fig:bars} summarises the
-settings and Figure~\ref{fig:logo} shows the LOGO matrix.
+settings, Figure~\ref{fig:logo} shows the LOGO matrix and Figure~\ref{fig:para} the paraphrase attack.
 
 \begin{table}
   \caption{In-distribution test results (\texttt{indist}).}
@@ -253,6 +253,12 @@ settings and Figure~\ref{fig:logo} shows the LOGO matrix.
   \includegraphics[width=0.8\textwidth]{figures/fig2_logo_heatmap.png}
   \caption{Leave-one-generator-out test AUROC (rows: detectors; columns: held-out generator).}
   \label{fig:logo}
+\end{figure}
+\begin{figure}
+  \includegraphics[width=\textwidth]{figures/fig3_paraphrase.png}
+  \caption{Paraphrase attack (Table~\ref{tab:para}): test AUROC on the original texts, after paraphrasing the machine
+  texts, and after paraphrasing 200 human texts instead (control). Dashed line: chance.}
+  \label{fig:para}
 \end{figure}
 
 \section{Discussion}

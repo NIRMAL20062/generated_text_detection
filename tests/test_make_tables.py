@@ -23,3 +23,32 @@ def test_tables_fill_present_cells_and_dash_missing(tmp_path):
     logo_row = [l for l in text.split("## Table 2")[1].splitlines() if l.startswith("| tfidf_lr")][0]
     assert "0.800" in logo_row and logo_row.rstrip().endswith("– |")  # mean is '–' until every generator is in
     assert text.index("| tfidf_lr") < text.index("| ppl")           # METHOD_ORDER
+
+
+def test_latex_tables_match_report_layout(tmp_path):
+    """results/tables.tex rows use the report's names, 3 decimals and '--' for missing (issue #33)."""
+    _write(tmp_path, "tfidf_lr", "indist", .95)
+    _write(tmp_path, "tfidf_lr", "paraphrase_orig", .90)
+    _write(tmp_path, "tfidf_lr", "paraphrase", .60)
+    _write(tmp_path, "fastdetectgpt", "logo_bloomz", .406)
+    mt.build(tmp_path, tmp_path / "tables.md", None)
+    tex = (tmp_path / "tables.tex").read_text(encoding="utf-8")
+    assert r"  TF-IDF + LR                & 0.950 [0.930, 0.970] & 0.800 & 0.790 & -- \\" in tex
+    assert r"  TF-IDF + LR                & 0.900 & 0.600 & 0.300 & -- \\" in tex          # Table 4 drop
+    assert r"  Fast-DetectGPT$^\dagger$   & -- & -- & -- & -- & 0.406 & -- \\" in tex   # Table 2, BLOOMZ column
+    assert tex.count(r"\begin{table}") == 4 and tex.count(r"\hline\hline") == 8
+    for label in ("tab:indist", "tab:logo", "tab:xdomain", "tab:para"):
+        assert rf"\label{{{label}}}" in tex
+
+
+def test_fig3_paraphrase_bars(tmp_path):
+    """Fig 3 is written and its data has one row per method, one column per paraphrase setting (issue #30)."""
+    _write(tmp_path, "logrank", "paraphrase_orig", .86)
+    _write(tmp_path, "logrank", "paraphrase", .70)
+    _write(tmp_path, "roberta", "paraphrase_human", .97)
+    df = mt.load_metrics(tmp_path)
+    bars = mt.paraphrase_bars(df)
+    assert list(bars.index) == ["logrank", "roberta"]
+    assert bars.loc["logrank"].tolist()[:2] == [.86, .70]
+    mt.build(tmp_path, tmp_path / "tables.md", tmp_path / "figures")
+    assert (tmp_path / "figures" / "fig3_paraphrase.png").stat().st_size > 0
