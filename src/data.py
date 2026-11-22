@@ -7,6 +7,18 @@ Contract: docs/TASKS.md §0.1 (dataset columns) and §0.2 (split files).
     python -m src.data --check-splits --dev
 
 Everyone else should only need `load_texts()` and `load_split()`.
+
+Input:  the 25 English M4 files (5 domains x 5 generators) from github.com/mbzuai-nlp/M4, saved to data/raw/.
+Output: data/processed/m4_en.parquet  one row per text: id, text, label (0 human, 1 machine), domain, generator, group
+        splits/<setting>.json          {"train": [ids], "val": [ids], "test": [ids]} for every setting
+        splits/detectgpt_subset.json   the ids the slow zero-shot method scores
+        results/data_audit.md          counts behind every dataset number in the report
+        data/sample_dev.parquet + splits/dev/   a ~500-row sample so every script can be tested in minutes
+
+Why `group` matters: M4 has one human text and up to five machine answers written for the same prompt, and the
+same human text often appears in several generator files. If those near-copies landed on both sides of a split,
+a detector could recognise the topic instead of learning who wrote the text, and test scores would be too high.
+So every split puts whole groups, never single rows, into train, val or test.
 """
 
 from __future__ import annotations
@@ -23,6 +35,7 @@ from pathlib import Path
 
 import pandas as pd
 
+# Seed for every random choice in the project (sampling, shuffling, model training), so runs repeat exactly.
 SEED = 42
 ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = ROOT / "data" / "raw"
@@ -54,6 +67,7 @@ KNOWN_FILES = {
 # peerread_bloomz uses human_reviews / bloom_reviews.
 HUMAN_KEYS = ["human_text", "human_reviews", "abstract", "text"]
 MACHINE_KEYS = ["machine_answer", "machine_abstract", "bloom_reviews", "machine_text"]
+# Texts shorter than this (empty answers, one-word replies) carry no style to detect, so they are dropped.
 MIN_CHARS = 50
 SETTINGS_TOP = ["indist"] + [f"logo_{g}" for g in GENERATORS] + [f"xdomain_{d}" for d in DOMAINS] + ["paraphrase_orig"]
 COLUMNS = ["id", "text", "label", "domain", "generator", "group"]
@@ -83,10 +97,16 @@ def load_split(setting: str, dev: bool = False) -> dict[str, list[str]]:
 # ---------------------------------------------------------------- download
 
 def file_name(domain: str, file_gen: str) -> str:
+    """M4's file name for one (domain, generator-as-spelled-in-the-file) cell, e.g. ('reddit', 'dolly') -> 'reddit_dolly.jsonl'."""
     return f"{domain}_{file_gen}.jsonl"
 
 
 def cell_file(domain: str, gen: str, raw_dir: Path = RAW_DIR) -> Path | None:
+    """Path of the raw file for (domain, generator), trying every spelling M4 uses; None if it was not downloaded.
+
+    Why: M4 is inconsistent (wikihow_dolly2.jsonl, wikipedia_chatgpt.jsonl), so callers use our canonical
+    generator names and this function finds the actual file.
+    """
     for fg in FILE_GEN[gen]:
         p = raw_dir / file_name(domain, fg)
         if p.exists():
@@ -131,10 +151,20 @@ def normalize(text) -> str:
 
 
 def _hash(*parts: str) -> str:
+    """Short, stable id (first 16 hex chars of SHA-1) for the joined parts.
+
+    Used to build `group` ids and to detect duplicate texts. Unlike Python's hash(), SHA-1 gives the same value on
+    every machine and every run, so the dataset and splits are reproducible.
+    """
     return hashlib.sha1("|".join(parts).encode("utf-8")).hexdigest()[:16]
 
 
 def _first(rec: dict, keys: list[str]):
+    """Value of the first key in `keys` that the record has and that is not empty; None if there is none.
+
+    Why: M4 files name the same field differently (human_text / abstract / text ...); the key lists at the top
+    of this file give the order in which to try them.
+    """
     for k in keys:
         if k in rec and rec[k] not in (None, ""):
             return rec[k]
@@ -164,10 +194,16 @@ def iter_units(path: Path, domain: str):
             if domain == "peerread":
                 hs = [normalize(t) for t in (h or [])]
                 ms = [normalize(t) for t in (m or [])]
+                # PeerRead: one record = one paper with several human and several machine reviews. All reviews of a
+                # paper discuss the same content, so they share one group (venue + paper id). If they were split
+                # by row, a test review could be almost a paraphrase of a training review of the same paper.
                 paper = f"{rec.get('source', '')}|{_paper_id(rec)}"
                 group = _hash("peerread", paper)
             else:
                 hs, ms = [normalize(h)], [normalize(m)]
+                # Other domains: group = hash of the human text. Each generator wrote its text for the same human
+                # prompt/article, so the human text and all machine answers to it end up in one group. Splits are
+                # made by group, which keeps a text and its near-copies on the same side of train/test.
                 group = _hash(domain, hs[0].lower())
             yield i, group, hs, ms
 
@@ -177,6 +213,7 @@ def iter_units(path: Path, domain: str):
 def _cell_rng(seed: int, domain: str, gen: str) -> random.Random:
     # Independent per-cell sampling (not coordinated across generators): if every cell picked the same
     # human texts, almost every group would contain every generator and LOGO train sets would be empty.
+    """A random generator seeded from (seed, domain, generator): reproducible, and different for every cell."""
     return random.Random(int(_hash(str(seed), domain, gen), 16))
 
 
@@ -198,6 +235,7 @@ def build_dataset(max_per_cell: int = 1000, raw_dir: Path = RAW_DIR, seed: int =
                     if len(t) >= MIN_CHARS:
                         human_files[_hash(dom, t.lower())].add(gen)
                 hs_ok = [t for t in hs if len(t) >= MIN_CHARS]
+                # A machine text identical to its human text is a collection error (the model copied the input): drop it.
                 ms_ok = [t for t in ms if len(t) >= MIN_CHARS and t not in hs]
                 dropped["short_or_empty_human"] += len(hs) - len(hs_ok)
                 dropped["short_empty_or_copied_machine"] += len(ms) - len(ms_ok)
@@ -211,6 +249,7 @@ def build_dataset(max_per_cell: int = 1000, raw_dir: Path = RAW_DIR, seed: int =
             # PeerRead units are papers with ~4 machine reviews each: cap papers so a cell holds
             # ~max_per_cell machine texts like every other cell, and generators only partly overlap.
             cap = max_per_cell // 4 if dom == "peerread" else max_per_cell
+            # Cap each cell at max_per_cell pairs so every generator and domain has a similar weight in the data.
             if len(units) > cap:
                 units = sorted(rng.sample(units, cap))
             stats["kept_units"][f"{dom}/{gen}"] = len(units)
@@ -266,6 +305,7 @@ def _split_groups(strata: pd.Series, fracs, seed: int) -> list[set[str]]:
 
 
 def _ids(df: pd.DataFrame, mask) -> list[str]:
+    """Sorted list of the ids of the rows selected by `mask`. Sorted so split files are identical on every run."""
     return sorted(df.loc[mask, "id"].tolist())
 
 
@@ -285,12 +325,15 @@ def make_splits(df: pd.DataFrame, out_dir: Path = SPLITS_DIR, seed: int = SEED,
     strata = _group_strata(df)
 
     # indist: 80/10/10 by group, stratified by domain x generator-set
+    # Whole GROUPS go to train/val/test, never single rows (see the group comments in iter_units).
     tr, va, te = _split_groups(strata, (0.8, 0.1, 0.1), seed)
     splits["indist"] = {"train": _ids(df, df.group.isin(tr)), "val": _ids(df, df.group.isin(va)),
                         "test": _ids(df, df.group.isin(te))}
 
     dom_of_group = df.groupby("group")["domain"].first()
     for gen in GENERATORS:
+        # LOGO (leave one generator out): test = every group that has a text by `gen`, with its human texts and
+        # only `gen`'s machine texts. Train/val come from the remaining groups, so the detector never sees `gen`.
         test_groups = set(df.loc[(df.label == 1) & (df.generator == gen), "group"])
         test_mask = df.group.isin(test_groups) & ((df.label == 0) | (df.generator == gen))
         rest = dom_of_group[~dom_of_group.index.isin(test_groups)]
@@ -299,6 +342,7 @@ def make_splits(df: pd.DataFrame, out_dir: Path = SPLITS_DIR, seed: int = SEED,
                                  "test": _ids(df, test_mask)}
 
     for dom in DOMAINS:
+        # Cross-domain: test = every text of `dom`; train/val come from the other four domains only.
         rest = strata[dom_of_group.reindex(strata.index) != dom]
         tr, va = _split_groups(rest, (0.9, 0.1), seed)
         splits[f"xdomain_{dom}"] = {"train": _ids(df, df.group.isin(tr)), "val": _ids(df, df.group.isin(va)),
@@ -388,6 +432,11 @@ def make_dev_sample(df: pd.DataFrame, per_cell: int = 5, seed: int = SEED) -> pd
 # ---------------------------------------------------------------- audit
 
 def write_audit(stats: dict, df: pd.DataFrame, splits: dict, path: Path = AUDIT_PATH) -> None:
+    """Write results/data_audit.md: raw counts per file, what cleaning dropped, duplicate human texts, final
+    dataset size and every split's sizes and machine:human ratio.
+
+    Why: the report's dataset numbers come from this file, and it lets anyone check the data without rerunning.
+    """
     L = ["# M4 English data audit", "", f"Generated by `python -m src.data --all` (seed {SEED}, "
          f"max {stats['max_per_cell']} pairs per cell (PeerRead: {stats['max_per_cell'] // 4} papers), texts < {MIN_CHARS} chars dropped).", ""]
     L += ["## Grid", "", "Raw records per file (a record = one human/machine pair; PeerRead = one paper):", "",
@@ -427,6 +476,7 @@ def write_audit(stats: dict, df: pd.DataFrame, splits: dict, path: Path = AUDIT_
         sp = splits[name]
 
         def ratio(ids):
+            """Machine:human ratio of a list of ids as text, e.g. '1.87'; '-' for an empty list."""
             m = sum(lab[i] for i in ids)
             return f"{m / max(len(ids) - m, 1):.2f}" if ids else "-"
         th = sum(1 for i in sp["test"] if lab[i] == 0)
@@ -443,6 +493,11 @@ def write_audit(stats: dict, df: pd.DataFrame, splits: dict, path: Path = AUDIT_
 # ---------------------------------------------------------------- CLI
 
 def main(argv=None) -> int:
+    """Command-line entry point (see the module docstring). Returns 0, used as the process exit code.
+
+    --all runs the whole data pipeline in order: download, build m4_en.parquet, write splits, write the audit,
+    make the dev sample and its splits, then check every split file against the data.
+    """
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--all", action="store_true", help="download, build, splits, audit, dev sample")
     ap.add_argument("--download", action="store_true")

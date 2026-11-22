@@ -290,6 +290,11 @@ def _fmt(x) -> str:
 
 
 def main(argv=None) -> int:
+    """Command-line entry point: read one preds.csv, check it, compute the metrics, write metrics.json next to it.
+
+    Returns 0 on success (the process exit code). Any problem with the file raises an error instead of
+    writing a quietly wrong metrics.json.
+    """
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("preds", type=Path, help="results/<method>/<setting>/preds.csv")
     ap.add_argument("--by", choices=["domain", "generator"], help="also print AUROC per domain or generator")
