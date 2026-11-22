@@ -12,6 +12,7 @@
 
 \usepackage{graphicx}
 \usepackage{url}
+\def\UrlBreaks{\do\/\do\_\do\.}
 \newcommand\TBD[1]{\textbf{[#1]}}
 \newcommand\eg{{\it e.g.\ }}
 
@@ -105,7 +106,7 @@ both sides of a split. Table~\ref{tab:settings} lists the settings.
 
 \begin{table}
   \caption{Evaluation settings. All splits are by group. Sizes from \texttt{results/data\_audit.md}.}
-  \begin{tabular}{llll}
+  \resizebox{\textwidth}{!}{\begin{tabular}{llll}
   \hline\hline
   Setting & Train / val & Test & Question \\
   \hline
@@ -114,7 +115,7 @@ both sides of a split. Table~\ref{tab:settings} lists the settings.
   \texttt{xdomain\_<dom>} ($\times$5) & other 4 domains & only \texttt{<dom>} & unseen domain \\
   \texttt{paraphrase\_orig} $\to$ \texttt{paraphrase} & \texttt{indist} model & 500 machine + 500 human & paraphrase attack \\
   \hline\hline
-  \end{tabular}
+  \end{tabular}}
   \label{tab:settings}
 \end{table}
 
