@@ -261,6 +261,14 @@ and whether paraphrased human texts are flagged as machine (detecting paraphrase
   \item RoBERTa is trained for one epoch with default hyperparameters and a 256-token limit. Its validation set is
         used both for checkpoint selection and for the threshold, so its accuracy and F1 are slightly optimistic
         (AUROC is not affected).
+  \item \emph{Formatting artifacts in M4 human texts.} The strongest ``human'' TF-IDF features in \texttt{indist}
+        are leftovers of the source pages, not writing style: \texttt{references}, \texttt{external links}
+        (Wikipedia section titles), \texttt{\_url\_0\_} (Reddit link placeholders) and the punctuation pattern
+        ``\texttt{. ,}'' left where citations were removed (\texttt{results/tfidf\_lr/indist/top\_features.csv}).
+        Supervised detectors can partly exploit these, so their in-distribution scores are likely optimistic. We
+        found this after the runs and did not have time to clean the data and rerun.
+  \item For TF-IDF + LR, the selected $C$ was the largest value in the grid ($C=16$) in every setting, so a larger
+        $C$ might be slightly better; validation gains between $C=4$ and $C=16$ were about 0.001 AUROC.
   \item English only, at most 1,000 machine texts per cell, one paraphraser, and one seed: the confidence
         intervals capture test-set sampling, not training variance.
 \end{itemize}
