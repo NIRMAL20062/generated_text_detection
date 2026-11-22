@@ -92,7 +92,8 @@ def figures(df, logo: pd.DataFrame, out: Path) -> list[Path]:
     if not bars.dropna(how="all").empty:
         ax = bars.plot.bar(figsize=(9, 4.5), rot=0, width=0.8)
         ax.set_ylabel("AUROC"); ax.set_ylim(0, 1); ax.axhline(0.5, color="grey", lw=0.8, ls="--")
-        ax.set_title("Detector AUROC by setting"); ax.legend(fontsize=8, ncol=4, loc="lower center")
+        ax.set_title("Detector AUROC by setting", pad=28)
+        ax.legend(fontsize=8, ncol=4, loc="lower center", bbox_to_anchor=(0.5, 1.0), frameon=False)
         plt.tight_layout(); p = out / "fig1_auroc_by_setting.png"; plt.savefig(p, dpi=150); plt.close(); paths.append(p)
     h = logo.drop(columns="mean")
     if not h.dropna(how="all").empty:
