@@ -1,0 +1,58 @@
+{
+  "method": "length",
+  "setting": "logo_davinci",
+  "dev": false,
+  "coverage": {
+    "val": 1.0,
+    "test": 1.0
+  },
+  "auroc": 0.5798944542772861,
+  "auroc_ci95": [
+    0.5707460245396664,
+    0.5887269879005119
+  ],
+  "threshold": 0.469565,
+  "accuracy": 0.5288051561725334,
+  "macro_f1": 0.52437788714339,
+  "tpr_at_1pct_fpr": 0.0004,
+  "n_test": 10085,
+  "n_test_human": 5085,
+  "n_test_machine": 5000,
+  "n_val": 2104,
+  "n_val_human": 820,
+  "n_val_machine": 1284,
+  "by_domain": {
+    "arxiv": {
+      "auroc": 0.9117195,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "peerread": {
+      "auroc": 0.5399986175115208,
+      "n_machine": 1000,
+      "n_human": 1085
+    },
+    "reddit": {
+      "auroc": 0.557241,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "wikihow": {
+      "auroc": 0.6097710000000001,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "wikipedia": {
+      "auroc": 0.6124700000000001,
+      "n_machine": 1000,
+      "n_human": 1000
+    }
+  },
+  "by_generator": {
+    "davinci": {
+      "auroc": 0.5798944542772861,
+      "n_machine": 5000,
+      "n_human": 5085
+    }
+  }
+}

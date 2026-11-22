@@ -1,0 +1,58 @@
+{
+  "method": "tfidf_lr",
+  "setting": "logo_bloomz",
+  "dev": false,
+  "coverage": {
+    "val": 1.0,
+    "test": 1.0
+  },
+  "auroc": 0.8144994382022472,
+  "auroc_ci95": [
+    0.8061835982763653,
+    0.8226011555365238
+  ],
+  "threshold": 0.513916,
+  "accuracy": 0.6647313520960441,
+  "macro_f1": 0.6358687641263221,
+  "tpr_at_1pct_fpr": 0.1154,
+  "n_test": 10162,
+  "n_test_human": 5162,
+  "n_test_machine": 5000,
+  "n_val": 2130,
+  "n_val_human": 804,
+  "n_val_machine": 1326,
+  "by_domain": {
+    "arxiv": {
+      "auroc": 0.5849495,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "peerread": {
+      "auroc": 0.7746781411359724,
+      "n_machine": 1000,
+      "n_human": 1162
+    },
+    "reddit": {
+      "auroc": 0.8023465,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "wikihow": {
+      "auroc": 0.945116,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "wikipedia": {
+      "auroc": 0.9414850000000001,
+      "n_machine": 1000,
+      "n_human": 1000
+    }
+  },
+  "by_generator": {
+    "bloomz": {
+      "auroc": 0.8144994382022472,
+      "n_machine": 5000,
+      "n_human": 5162
+    }
+  }
+}

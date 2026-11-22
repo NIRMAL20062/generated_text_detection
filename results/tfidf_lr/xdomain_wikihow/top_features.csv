@@ -1,0 +1,61 @@
+direction,rank,feature,coef
+ai,1,word:article,6.9802
+ai,2,word:such as,6.8039
+ai,3,word:additionally,6.6941
+ai,4,word:this article,6.6053
+ai,5,word:show that,5.2246
+ai,6,word:examines,4.9707
+ai,7,word:endoftext,4.7035
+ai,8,word:overall,4.5331
+ai,9,word:this study,4.5279
+ai,10,word:examines the,4.5266
+ai,11,word:category,4.5251
+ai,12,word:our results,4.3679
+ai,13,word:yes,4.2994
+ai,14,char:. thi,4.2587
+ai,15,word:find that,4.1597
+ai,16,word:we present,4.0734
+ai,17,"char:, whi",4.0508
+ai,18,"char:, wit",3.9690
+ai,19,word:who,3.9632
+ai,20,"char:, wh",3.9173
+ai,21,word:results show,3.8188
+ai,22,"char:, w",3.8137
+ai,23,"char:, wi",3.6933
+ai,24,word:presents,3.6807
+ai,25,word:was,3.6657
+ai,26,char:. th,3.6063
+ai,27,word:investigates the,3.4984
+ai,28,char: wa,3.4491
+ai,29,word:research,3.4344
+ai,30,char:. our,3.3890
+human,1,word:references,-21.7638
+human,2,word:external links,-9.0567
+human,3,word:see also,-8.4979
+human,4,word:we,-8.2078
+human,5,word:_url_0_,-8.1591
+human,6,word:links,-7.8552
+human,7,word:is,-7.7044
+human,8,word:edit,-7.2618
+human,9,word:the,-6.9301
+human,10,word:births,-6.9192
+human,11,word:for,-6.9091
+human,12,word:reviewers,-6.8363
+human,13,word:references external,-6.6919
+human,14,char:efere,-6.6143
+human,15,char:. ref,-6.3800
+human,16,char: refe,-6.2638
+human,17,word:external,-6.2524
+human,18,word:paper,-6.1103
+human,19,char:ences,-6.0089
+human,20,char:nces ,-5.5632
+human,21,char:. re,-5.5073
+human,22,char:refer,-5.5021
+human,23,char:refe,-5.4865
+human,24,char:efer,-5.4684
+human,25,word:see,-5.2622
+human,26,char:erenc,-5.1687
+human,27,char:. r,-5.1411
+human,28,word:here,-5.1400
+human,29,char: ref,-5.0755
+human,30,word:in,-5.0341

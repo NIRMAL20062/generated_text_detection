@@ -1,0 +1,31 @@
+{
+  "method": "length",
+  "setting": "xdomain_wikipedia",
+  "trained_on": "xdomain_wikipedia[train]",
+  "dev": false,
+  "git_commit": "d0cf1eb3a804b8a3322a19669c7afec00eaf6aa7",
+  "seed": 42,
+  "hyperparameters": {
+    "features": [
+      "log1p(chars)",
+      "log1p(words)"
+    ],
+    "class_weight": "balanced",
+    "coef": [
+      1.2706,
+      -1.6177
+    ],
+    "intercept": 0.024691355103567746
+  },
+  "n_train": 27266,
+  "n_val": 3045,
+  "n_test": 7930,
+  "train_seconds": 1.2,
+  "runtime_seconds": 2.0,
+  "hardware": "CPU: x86_64 x4 (Linux-6.18.55+-x86_64-with-glibc2.39)",
+  "versions": {
+    "python": "3.13.18",
+    "sklearn": "1.6.1",
+    "pandas": "2.3.3"
+  }
+}

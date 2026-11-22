@@ -1,0 +1,61 @@
+direction,rank,feature,coef
+ai,1,word:article,8.1190
+ai,2,word:this article,6.8453
+ai,3,word:additionally,6.7624
+ai,4,word:how to,6.0047
+ai,5,word:such as,5.7658
+ai,6,word:examines,5.3191
+ai,7,word:show that,4.9209
+ai,8,word:this study,4.8596
+ai,9,word:endoftext,4.7438
+ai,10,word:your,4.7367
+ai,11,word:examines the,4.7267
+ai,12,word:our results,4.5563
+ai,13,char:how t,4.3637
+ai,14,word:who,4.1470
+ai,15,word:find that,4.0701
+ai,16,word:category,4.0443
+ai,17,word:how,3.9528
+ai,18,char:. thi,3.8681
+ai,19,word:overall,3.7812
+ai,20,word:we present,3.6989
+ai,21,word:steps,3.6843
+ai,22,word:results show,3.6537
+ai,23,word:presents,3.6362
+ai,24,char:ow t,3.5903
+ai,25,word:is an,3.5900
+ai,26,word:addresses the,3.5494
+ai,27,"char:, whi",3.5420
+ai,28,word:was,3.5113
+ai,29,word:investigates the,3.4672
+ai,30,word:research,3.4578
+human,1,word:references,-22.2103
+human,2,"char:. ,",-17.0695
+human,3,"char:. , ",-14.9990
+human,4,"char: , ",-14.0772
+human,5,"char:,, ",-9.7746
+human,6,word:external links,-9.4016
+human,7,"char: ,,",-8.3392
+human,8,word:we,-8.1490
+human,9,word:links,-8.0980
+human,10,word:see also,-7.8893
+human,11,word:is,-7.2178
+human,12,"char: , t",-7.0318
+human,13,word:births,-7.0023
+human,14,"char:s. ,",-6.9171
+human,15,word:reviewers,-6.7882
+human,16,"char:. ,,",-6.7454
+human,17,word:references external,-6.6618
+human,18,"char:,,,",-6.6253
+human,19,word:external,-6.5201
+human,20,char:efere,-6.4655
+human,21,"char:e. ,",-6.3526
+human,22,"char: , th",-6.3507
+human,23,"char:. , t",-6.2643
+human,24,char: refe,-6.2309
+human,25,char:. ref,-6.1618
+human,26,"char: ,, ",-6.1617
+human,27,char:ences,-6.1233
+human,28,word:the,-6.0813
+human,29,"char:s. , ",-5.9739
+human,30,word:paper,-5.8139

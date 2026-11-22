@@ -1,0 +1,31 @@
+{
+  "method": "length",
+  "setting": "xdomain_reddit",
+  "trained_on": "xdomain_reddit[train]",
+  "dev": false,
+  "git_commit": "d0cf1eb3a804b8a3322a19669c7afec00eaf6aa7",
+  "seed": 42,
+  "hyperparameters": {
+    "features": [
+      "log1p(chars)",
+      "log1p(words)"
+    ],
+    "class_weight": "balanced",
+    "coef": [
+      0.7036,
+      -0.9809
+    ],
+    "intercept": 0.013954487258429873
+  },
+  "n_train": 27574,
+  "n_val": 3079,
+  "n_test": 7588,
+  "train_seconds": 1.4,
+  "runtime_seconds": 2.2,
+  "hardware": "CPU: x86_64 x4 (Linux-6.18.55+-x86_64-with-glibc2.39)",
+  "versions": {
+    "python": "3.13.18",
+    "sklearn": "1.6.1",
+    "pandas": "2.3.3"
+  }
+}

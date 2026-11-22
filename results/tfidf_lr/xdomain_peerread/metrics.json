@@ -1,0 +1,58 @@
+{
+  "method": "tfidf_lr",
+  "setting": "xdomain_peerread",
+  "dev": false,
+  "coverage": {
+    "val": 1.0,
+    "test": 1.0
+  },
+  "auroc": 0.8948859527925548,
+  "auroc_ci95": [
+    0.8871565995677385,
+    0.9034565442154555
+  ],
+  "threshold": 0.561852,
+  "accuracy": 0.8171899946780202,
+  "macro_f1": 0.7749559368838355,
+  "tpr_at_1pct_fpr": 0.25630252100840334,
+  "n_test": 7516,
+  "n_test_human": 2518,
+  "n_test_machine": 4998,
+  "n_val": 3077,
+  "n_val_human": 1072,
+  "n_val_machine": 2005,
+  "by_domain": {
+    "peerread": {
+      "auroc": 0.8948859527925548,
+      "n_machine": 4998,
+      "n_human": 2518
+    }
+  },
+  "by_generator": {
+    "bloomz": {
+      "auroc": 0.9144685886402752,
+      "n_machine": 1000,
+      "n_human": 1162
+    },
+    "chatGPT": {
+      "auroc": 0.9468580960854093,
+      "n_machine": 1000,
+      "n_human": 1124
+    },
+    "cohere": {
+      "auroc": 0.9146280965141702,
+      "n_machine": 998,
+      "n_human": 1121
+    },
+    "davinci": {
+      "auroc": 0.9773317972350231,
+      "n_machine": 1000,
+      "n_human": 1085
+    },
+    "dolly": {
+      "auroc": 0.7186307359307359,
+      "n_machine": 1000,
+      "n_human": 1155
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "method": "length",
+  "setting": "xdomain_wikipedia",
+  "dev": false,
+  "coverage": {
+    "val": 1.0,
+    "test": 1.0
+  },
+  "auroc": 0.586760204778157,
+  "auroc_ci95": [
+    0.5744298973610499,
+    0.5984290517048791
+  ],
+  "threshold": 0.462978,
+  "accuracy": 0.6484237074401009,
+  "macro_f1": 0.6073068139448173,
+  "tpr_at_1pct_fpr": 0.0038,
+  "n_test": 7930,
+  "n_test_human": 2930,
+  "n_test_machine": 5000,
+  "n_val": 3045,
+  "n_val_human": 1046,
+  "n_val_machine": 1999,
+  "by_domain": {
+    "wikipedia": {
+      "auroc": 0.586760204778157,
+      "n_machine": 5000,
+      "n_human": 2930
+    }
+  },
+  "by_generator": {
+    "bloomz": {
+      "auroc": 0.7212584999999999,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "chatGPT": {
+      "auroc": 0.6949335,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "cohere": {
+      "auroc": 0.5749044999999999,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "davinci": {
+      "auroc": 0.6001394999999999,
+      "n_machine": 1000,
+      "n_human": 1000
+    },
+    "dolly": {
+      "auroc": 0.5481560000000001,
+      "n_machine": 1000,
+      "n_human": 1000
+    }
+  }
+}

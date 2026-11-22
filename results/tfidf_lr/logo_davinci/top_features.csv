@@ -1,0 +1,61 @@
+direction,rank,feature,coef
+ai,1,word:show that,5.4843
+ai,2,word:such as,4.9493
+ai,3,word:how to,4.6068
+ai,4,word:we present,4.3157
+ai,5,word:overall,4.2557
+ai,6,char:. t,4.0835
+ai,7,char:. th,3.9754
+ai,8,char:. the,3.9573
+ai,9,word:we show,3.9554
+ai,10,char:. in ,3.9317
+ai,11,word:our results,3.9200
+ai,12,word:endoftext,3.8670
+ai,13,char:. in,3.8129
+ai,14,word:category,3.7315
+ai,15,word:article,3.7224
+ai,16,word:find that,3.7095
+ai,17,char:how t,3.5754
+ai,18,word:including,3.5401
+ai,19,word:that the,3.4507
+ai,20,char:s. t,3.4175
+ai,21,word:finally,3.4125
+ai,22,char:s. th,3.3929
+ai,23,char:. thi,3.3669
+ai,24,word:yes,3.2752
+ai,25,word:who,3.1755
+ai,26,"char:, whi",3.1550
+ai,27,char: wa,3.0580
+ai,28,char: wh,3.0519
+ai,29,word:problem of,2.9843
+ai,30,word:the problem,2.9792
+human,1,word:references,-18.8891
+human,2,"char:. ,",-13.6365
+human,3,"char:. , ",-12.0124
+human,4,"char: , ",-11.0993
+human,5,"char:,, ",-7.4069
+human,6,word:external links,-7.1921
+human,7,word:see also,-6.7314
+human,8,word:the,-6.6585
+human,9,word:links,-6.5691
+human,10,"char: ,,",-6.5181
+human,11,word:_url_0_,-6.3966
+human,12,word:paper,-6.0327
+human,13,word:is,-5.9583
+human,14,word:births,-5.8916
+human,15,word:we,-5.8169
+human,16,char:efere,-5.7380
+human,17,char: refe,-5.5529
+human,18,word:edit,-5.5423
+human,19,word:reviewers,-5.4445
+human,20,"char: , t",-5.4371
+human,21,"char:. ,,",-5.4050
+human,22,word:references external,-5.3979
+human,23,word:external,-5.3435
+human,24,"char:s. ,",-5.2814
+human,25,char:. ref,-5.2419
+human,26,"char:e. ,",-5.1563
+human,27,"char:,,,",-5.0891
+human,28,"char:. , t",-4.9288
+human,29,char:refe,-4.9019
+human,30,char:refer,-4.8891
