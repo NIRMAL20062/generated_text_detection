@@ -3,6 +3,10 @@
 **Team 20:** NIRMAL20062 · VIVEK342004 · RITESHJHA2244 · kumar-vishal01
 **Deadline:** Sat 22 Nov 2026, 11:59 pm IST (report + this GitHub repo) · **Viva:** from 23 Nov
 
+> **Outcome (22 Nov):** everything below was built and run except perturbation DetectGPT, which was replaced by
+> Fast-DetectGPT (the planned fallback, §3.3). All 84 results are in `results/`, tables in `results/tables.md`,
+> the report in `report/report.tex`. This file is the original plan and is kept for reference.
+
 ---
 
 ## 1. What we are building (in one paragraph)
@@ -133,13 +137,14 @@ generated_text_detection/
 │   ├── eval.py            # shared evaluator: AUROC (+bootstrap CI), acc, F1, TPR@1%FPR
 │   ├── baseline_tfidf.py  # TF-IDF + LR, plus the length-only sanity baseline
 │   ├── train_roberta.py
-│   ├── zeroshot.py        # perplexity, log-rank, DetectGPT (Fast-DetectGPT fallback)
+│   ├── zeroshot.py        # perplexity, log-rank, Fast-DetectGPT
 │   ├── paraphrase.py
 │   └── make_tables.py     # every metrics.json → final tables + figures
 ├── notebooks/             # thin Kaggle/Colab runners + analysis
 ├── results/<method>/<setting>/{preds.csv, metrics.json}   # committed
 ├── results/figures/
-└── docs/                  # ROADMAP.md (this file), TASKS.md (who codes what)
+├── report/                # report.tex (course NLE template) + figures
+└── docs/                  # ROADMAP.md (this file), TASKS.md (who codes what), report drafts, viva notes
 ```
 
 **Rule:** every experiment writes `results/<method>/<setting>/preds.csv`, `src/eval.py` turns that into

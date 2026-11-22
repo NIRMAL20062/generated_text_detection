@@ -186,7 +186,7 @@ Everyone depends on you first, so **do the bootstrap commit today, ship a dev sa
   - write `results/roberta/<setting>/preds.csv` (val + test, score = softmax P(machine)) + `run_info.json`
   - `--predict-only --model <path>`: score a setting with an already-trained model (for the `paraphrase*` settings)
 - [x] `notebooks/kaggle_roberta.ipynb`: attach the Kaggle Dataset, `git clone`, `pip install -r requirements.txt`, then a loop over settings calling the script. **No logic inside the notebook.**
-- [ ] Save model weights to Kaggle output / Google Drive only (not git). **Keep the `indist` model for your own `paraphrase*` runs.**
+- [x] Save model weights to Kaggle output / Google Drive only (not git). **Keep the `indist` model for your own `paraphrase*` runs.**
 
 **Run order (11 training runs + 3 prediction-only runs; stop early if GPU quota runs out)**
 1. `indist` ← do this first, by **Wed 12 Nov**. Right after it, score `paraphrase_orig` with the same model.
@@ -208,12 +208,12 @@ setting by selecting the ids from that setting's split file.
   - scorer LM: `gpt2-medium` (fall back to `gpt2` if it's slow), truncate texts to 256 tokens
   - `ppl`: mean token log-likelihood (score = log-lik, because higher log-lik means more AI-like)
   - `logrank`: mean log-rank of the actual tokens (score = −logrank)
-  - `detectgpt`: perturb with `t5-large` mask-filling (span length 2, ~15% of words masked),
+  - *(planned, not built: Fast-DetectGPT was used instead)* `detectgpt`: perturb with `t5-large` mask-filling (span length 2, ~15% of words masked),
     n=20 perturbations; score = (logp(x) − mean logp(x̃)) / std (the normalised version)
-  - cache scores to `results/zeroshot_cache/<method>.parquet` (`id, score`) so a Kaggle timeout doesn't lose progress (skip ids that are already cached)
+  - cache scores to `results/zeroshot_cache/<method>__<model>__<max_tokens>.parquet` (`id, score`) so a Kaggle timeout doesn't lose progress (skip ids that are already cached)
   - then write `results/<method>/<setting>/preds.csv` + `run_info.json` for every setting
 - [x] `notebooks/kaggle_zeroshot.ipynb`: same rule as B, so the notebook only calls the scripts
-- [ ] **What to score:**
+- [x] **What to score:** (what is said below for `detectgpt` was applied to `fastdetectgpt`)
   - `ppl`, `logrank`: every text in `load_texts()` (cheap)
   - `detectgpt`: only the ids in `splits/detectgpt_subset.json` (1,500 texts, already covering `paraphrase_orig`
     + 500 `indist` val texts), **plus** the `_para` ids from D (and `paraphrase_human` if made). That gives `indist`
@@ -255,7 +255,7 @@ setting by selecting the ids from that setting's split file.
   - Table 4: paraphrase AUROC **`paraphrase_orig` → `paraphrase`**, with the drop (+ the human control if done)
   - Fig 1: grouped bar chart (method × setting); Fig 2: LOGO heatmap → saved to `results/figures/`
   - write `make_tables.py` against **fake metrics.json files** first, so it's ready before the real results arrive
-- [ ] Own the report document: set up the template once the instructor shares the format, and merge everyone's sections
+- [x] Own the report document: set up the template once the instructor shares the format, and merge everyone's sections
 
 **Deadlines**
 | By | Deliverable |
