@@ -17,7 +17,7 @@ whether detectors still work on **unseen generators**, **unseen domains**, and *
 | D: Attack & Results | Vishal Kumar | [@kumar-vishal01](https://github.com/kumar-vishal01) |
 
 ## Docs
-
+ 
 - [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md): the instructor's original assignment, word for word, mapped to the repo
 - [AGENTS.md](AGENTS.md): start here if you are an AI coding agent (or new to the repo)
 - [docs/ROADMAP.md](docs/ROADMAP.md): what we're building, the evaluation settings, timeline, risks
